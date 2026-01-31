@@ -9,16 +9,41 @@
 # =============================================================================
 
 include:
-  # GitLab Components - reusable templates shared across teams
+  # ==========================================================================
+  # GitLab Components - Reusable, Versioned Job Templates
+  # ==========================================================================
+  # Components are the key to our CI/CD philosophy:
+  # - Parameterized: Same template, different inputs per team
+  # - Versioned: Pin to @1.0.0 for stability, upgrade when ready
+  # - Centralized: Single source of truth for security policies
+  # - Reduced Duplication: 90% less boilerplate per project
+  # ==========================================================================
+  
+  # Security Scanning Component - Snyk integration for vulnerability detection
   - component: $CI_SERVER_FQDN/devex/components/security-scanning@1.0.0
     inputs:
       stage: security
+      snyk_org: "federated-devex"
+      severity_threshold: "high"
+      fail_on_issues: false
+  
+  # Pages Component - Documentation deployment to GitLab Pages
+  - component: $CI_SERVER_FQDN/devex/components/pages@1.0.0
+    inputs:
+      stage: deploy
+      framework: "mkdocs"
+      docs_dir: "docs"
+  
+  # Deploy Template Component - Kubernetes deployments
   - component: $CI_SERVER_FQDN/devex/components/deploy-template@1.0.0
     inputs:
       stage: deploy
-  # Local component definitions (for teams without centralized components)
+  
+  # Local component definitions (for development/testing)
   - local: '/.gitlab/components/quality-gates.yml'
   - local: '/.gitlab/components/notifications.yml'
+  - local: '/.gitlab/components/pages.yml'
+  - local: '/.gitlab/components/security-scanning.yml'
 
 # =============================================================================
 # VARIABLES - Environment-specific configurations
@@ -52,6 +77,7 @@ stages:
   - quality
   - package
   - deploy
+  - pages
   - verify
   - cleanup
 
@@ -464,6 +490,102 @@ verify:performance:
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       when: manual
+
+# =============================================================================
+# PAGES STAGE - GitLab Pages Documentation Deployment
+# =============================================================================
+# This demonstrates using the Pages component to deploy documentation
+# The component handles MkDocs, Docusaurus, VitePress, or static HTML
+# =============================================================================
+
+# Deploy MkDocs documentation to GitLab Pages
+pages:
+  stage: pages
+  extends: .pages-mkdocs
+  needs: ["build"]
+  variables:
+    DOCS_DIR: "docs"
+  before_script:
+    - pip install mkdocs mkdocs-material mkdocs-awesome-pages-plugin pymdown-extensions
+  script:
+    - |
+      echo "=========================================="
+      echo "  GitLab Pages - Documentation Deployment"
+      echo "=========================================="
+      echo ""
+      echo "Building MkDocs documentation site..."
+      echo "Source: ./docs"
+      echo "Config: mkdocs.yml"
+      echo ""
+      
+      # Build the documentation
+      mkdocs build --strict --site-dir public
+      
+      echo ""
+      echo "=== Build Complete ==="
+      echo "Output files:"
+      ls -la public/ | head -15
+      echo ""
+      echo "Total size: $(du -sh public/ | cut -f1)"
+      echo ""
+      echo "Documentation will be available at:"
+      echo "https://$CI_PROJECT_NAMESPACE.gitlab.io/$CI_PROJECT_NAME"
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 week
+  environment:
+    name: documentation
+    url: https://$CI_PROJECT_NAMESPACE.gitlab.io/$CI_PROJECT_NAME
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_MERGE_REQUEST_IID
+      changes:
+        - docs/**/*
+        - mkdocs.yml
+
+# =============================================================================
+# SECURITY SCANNING - Using the Security Component
+# =============================================================================
+# This demonstrates using the security-scanning component for Snyk integration
+# The component provides standardized vulnerability detection across all projects
+# =============================================================================
+
+# Snyk Dependency Scan - Using the component template
+security:snyk-dependencies:
+  extends: .snyk-dependency-scan
+  needs: ["prepare:dependencies"]
+  variables:
+    SNYK_ORG: "federated-devex"
+    SNYK_SEVERITY_THRESHOLD: "high"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_MERGE_REQUEST_IID
+
+# Snyk Code Analysis (SAST) - Using the component template
+security:snyk-code:
+  extends: .snyk-code-scan
+  needs: ["prepare:dependencies"]
+  variables:
+    SNYK_ORG: "federated-devex"
+    SNYK_SEVERITY_THRESHOLD: "medium"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_MERGE_REQUEST_IID
+
+# Snyk IaC Scan - Using the component template
+security:snyk-iac:
+  extends: .snyk-iac-scan
+  needs: []
+  variables:
+    SNYK_ORG: "federated-devex"
+    SNYK_SEVERITY_THRESHOLD: "high"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      exists:
+        - terraform/**/*
+        - k8s/**/*
+        - "*.tf"
 
 # =============================================================================
 # CLEANUP STAGE

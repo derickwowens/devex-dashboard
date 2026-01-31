@@ -2,6 +2,34 @@
 
 This directory contains standardized GitLab CI/CD pipeline configurations that demonstrate parallelization patterns, reusable components, and consistent security scanning across teams.
 
+## Quick Start
+
+```yaml
+# Include components in your .gitlab-ci.yml
+include:
+  # Security scanning with Snyk
+  - component: $CI_SERVER_FQDN/devex/components/security-scanning@1.0.0
+    inputs:
+      severity_threshold: high
+      fail_on_issues: false
+  
+  # GitLab Pages deployment
+  - component: $CI_SERVER_FQDN/devex/components/pages@1.0.0
+    inputs:
+      framework: mkdocs
+      docs_dir: docs
+```
+
+## Available Components
+
+| Component | Purpose | Key Inputs |
+|-----------|---------|------------|
+| `security-scanning` | Snyk vulnerability detection | `severity_threshold`, `fail_on_issues`, `snyk_org` |
+| `pages` | GitLab Pages deployment | `framework`, `docs_dir`, `output_dir` |
+| `quality-gates` | Code coverage & complexity | `coverage_threshold`, `complexity_max` |
+| `notifications` | Slack/Teams alerts | `webhook_url`, `channel` |
+| `deploy-template` | Kubernetes deployment | `namespace`, `replicas` |
+
 ## Key Concepts
 
 ### 1. Parallel Matrix Execution

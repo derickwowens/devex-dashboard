@@ -1,0 +1,219 @@
+# =============================================================================
+# GitLab Pages Component
+# =============================================================================
+# Standardized GitLab Pages deployment for documentation sites
+# Supports MkDocs, Docusaurus, VitePress, and static HTML
+# =============================================================================
+
+spec:
+  inputs:
+    stage:
+      default: deploy
+    docs_dir:
+      default: "docs"
+    build_command:
+      default: "mkdocs build"
+    output_dir:
+      default: "site"
+    node_version:
+      default: "20"
+    python_version:
+      default: "3.11"
+    framework:
+      default: "mkdocs"  # mkdocs, docusaurus, vitepress, static
+
+---
+
+# =============================================================================
+# MkDocs Pages Deployment
+# =============================================================================
+.pages-mkdocs:
+  stage: $[[ inputs.stage ]]
+  image: python:$[[ inputs.python_version ]]-slim
+  before_script:
+    - pip install mkdocs mkdocs-material mkdocs-awesome-pages-plugin
+  script:
+    - |
+      echo "=== Building MkDocs Documentation ==="
+      echo "Docs directory: $[[ inputs.docs_dir ]]"
+      echo "Output directory: $[[ inputs.output_dir ]]"
+      
+      # Build documentation
+      mkdocs build --strict --site-dir public
+      
+      echo ""
+      echo "=== Documentation Build Complete ==="
+      ls -la public/
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_MERGE_REQUEST_IID
+      changes:
+        - docs/**/*
+        - mkdocs.yml
+
+# =============================================================================
+# Docusaurus Pages Deployment
+# =============================================================================
+.pages-docusaurus:
+  stage: $[[ inputs.stage ]]
+  image: node:$[[ inputs.node_version ]]-alpine
+  before_script:
+    - cd $[[ inputs.docs_dir ]]
+    - npm ci
+  script:
+    - |
+      echo "=== Building Docusaurus Documentation ==="
+      npm run build
+      mv build ../public
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_MERGE_REQUEST_IID
+      changes:
+        - $[[ inputs.docs_dir ]]/**/*
+
+# =============================================================================
+# VitePress Pages Deployment
+# =============================================================================
+.pages-vitepress:
+  stage: $[[ inputs.stage ]]
+  image: node:$[[ inputs.node_version ]]-alpine
+  before_script:
+    - npm ci
+  script:
+    - |
+      echo "=== Building VitePress Documentation ==="
+      npm run docs:build
+      mv $[[ inputs.docs_dir ]]/.vitepress/dist public
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# =============================================================================
+# Static HTML Pages (pre-built)
+# =============================================================================
+.pages-static:
+  stage: $[[ inputs.stage ]]
+  image: alpine:latest
+  script:
+    - |
+      echo "=== Deploying Static Documentation ==="
+      mkdir -p public
+      cp -r $[[ inputs.docs_dir ]]/* public/
+      
+      # Add index redirect if needed
+      if [ ! -f "public/index.html" ]; then
+        echo "Creating index redirect..."
+        echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=./index.md"></head></html>' > public/index.html
+      fi
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# =============================================================================
+# Dashboard Pages (React/Vite)
+# =============================================================================
+.pages-dashboard:
+  stage: $[[ inputs.stage ]]
+  image: node:$[[ inputs.node_version ]]-alpine
+  before_script:
+    - cd apps/dashboard
+    - npm ci
+  script:
+    - |
+      echo "=== Building Dashboard for GitLab Pages ==="
+      
+      # Build with base path for GitLab Pages
+      npm run build -- --base=/$CI_PROJECT_NAME/
+      
+      # Move to public directory
+      mkdir -p ../../public
+      cp -r dist/* ../../public/
+      
+      echo ""
+      echo "=== Dashboard Build Complete ==="
+      ls -la ../../public/
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+# =============================================================================
+# Combined Pages Job (auto-detects framework)
+# =============================================================================
+pages:
+  stage: $[[ inputs.stage ]]
+  image: python:$[[ inputs.python_version ]]-slim
+  before_script:
+    - |
+      # Install dependencies based on what's detected
+      if [ -f "mkdocs.yml" ]; then
+        pip install mkdocs mkdocs-material mkdocs-awesome-pages-plugin
+      fi
+      if [ -f "package.json" ]; then
+        apt-get update && apt-get install -y nodejs npm
+        npm ci
+      fi
+  script:
+    - |
+      echo "=== GitLab Pages Deployment ==="
+      echo "Framework: $[[ inputs.framework ]]"
+      echo ""
+      
+      case "$[[ inputs.framework ]]" in
+        mkdocs)
+          echo "Building with MkDocs..."
+          mkdocs build --strict --site-dir public
+          ;;
+        docusaurus)
+          echo "Building with Docusaurus..."
+          cd $[[ inputs.docs_dir ]] && npm run build
+          mv build ../public
+          ;;
+        vitepress)
+          echo "Building with VitePress..."
+          npm run docs:build
+          mv $[[ inputs.docs_dir ]]/.vitepress/dist public
+          ;;
+        static)
+          echo "Deploying static files..."
+          mkdir -p public
+          cp -r $[[ inputs.docs_dir ]]/* public/
+          ;;
+        *)
+          echo "Unknown framework: $[[ inputs.framework ]]"
+          exit 1
+          ;;
+      esac
+      
+      echo ""
+      echo "=== Pages Build Complete ==="
+      echo "Files in public/:"
+      ls -la public/ | head -20
+      echo ""
+      echo "Total size: $(du -sh public/ | cut -f1)"
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 week
+  environment:
+    name: documentation
+    url: https://$CI_PROJECT_NAMESPACE.gitlab.io/$CI_PROJECT_NAME
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
