@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Federated DevEx Platform | Developer Experience, Simplified</title>
+  <meta name="description" content="Empower engineers to focus on their expertise. We handle the tedious infrastructure so you can build what matters.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #3b82f6;
+      --primary-dark: #2563eb;
+      --secondary: #8b5cf6;
+      --accent: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+      color: var(--gray-800);
+      background: var(--gray-50);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--gray-200);
+      z-index: 100;
+    }
+
+    nav .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 72px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: var(--gray-900);
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-size: 1.1rem;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .nav-links a {
+      color: var(--gray-600);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--primary);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--gray-700);
+      border: 1px solid var(--gray-300);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 160px 0 100px;
+      background: linear-gradient(180deg, white 0%, var(--gray-50) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -10%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero .container {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-content {
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 100px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--primary);
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      line-height: 1.1;
+      color: var(--gray-900);
+      margin-bottom: 24px;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 1.25rem;
+      color: var(--gray-600);
+      margin-bottom: 40px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* Problem Section */
+    .problem {
+      padding: 100px 0;
+      background: var(--gray-900);
+      color: white;
+    }
+
+    .problem h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .problem > .container > p {
+      text-align: center;
+      color: var(--gray-400);
+      font-size: 1.125rem;
+      max-width: 600px;
+      margin: 0 auto 60px;
+    }
+
+    .pain-points {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .pain-point {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 32px;
+      transition: all 0.3s;
+    }
+
+    .pain-point:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-4px);
+    }
+
+    .pain-point-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(239, 68, 68, 0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+
+    .pain-point h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .pain-point p {
+      color: var(--gray-400);
+      font-size: 0.95rem;
+    }
+
+    /* Solution Section */
+    .solution {
+      padding: 100px 0;
+      background: white;
+    }
+
+    .solution h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 16px;
+      color: var(--gray-900);
+    }
+
+    .solution > .container > p {
+      text-align: center;
+      color: var(--gray-600);
+      font-size: 1.125rem;
+      max-width: 600px;
+      margin: 0 auto 60px;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 32px;
+    }
+
+    .feature {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 16px;
+      padding: 32px;
+      transition: all 0.3s;
+    }
+
+    .feature:hover {
+      border-color: var(--primary);
+      box-shadow: 0 10px 40px rgba(59, 130, 246, 0.1);
+    }
+
+    .feature-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 24px;
+      color: white;
+    }
+
+    .feature h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--gray-900);
+    }
+
+    .feature p {
+      color: var(--gray-600);
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+    }
+
+    .feature-list {
+      list-style: none;
+    }
+
+    .feature-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      color: var(--gray-700);
+      font-size: 0.9rem;
+    }
+
+    .feature-list li::before {
+      content: '✓';
+      color: var(--success);
+      font-weight: 700;
+    }
+
+    /* Philosophy Section */
+    .philosophy {
+      padding: 100px 0;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+    }
+
+    .philosophy h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .principles {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 32px;
+    }
+
+    .principle {
+      text-align: center;
+      padding: 24px;
+    }
+
+    .principle-number {
+      width: 48px;
+      height: 48px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin: 0 auto 20px;
+    }
+
+    .principle h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .principle p {
+      opacity: 0.9;
+      font-size: 0.95rem;
+    }
+
+    /* Code Example Section */
+    .code-example {
+      padding: 100px 0;
+      background: var(--gray-50);
+    }
+
+    .code-example h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 16px;
+      color: var(--gray-900);
+    }
+
+    .code-example > .container > p {
+      text-align: center;
+      color: var(--gray-600);
+      font-size: 1.125rem;
+      max-width: 600px;
+      margin: 0 auto 60px;
+    }
+
+    .code-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 0;
+      background: var(--gray-800);
+      padding: 12px 16px 0;
+      border-radius: 16px 16px 0 0;
+    }
+
+    .code-tab {
+      padding: 10px 20px;
+      background: transparent;
+      border: none;
+      color: var(--gray-400);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 8px 8px 0 0;
+      transition: all 0.2s;
+    }
+
+    .code-tab.active {
+      background: var(--gray-900);
+      color: white;
+    }
+
+    .code-block {
+      background: var(--gray-900);
+      border-radius: 0 0 16px 16px;
+      padding: 24px;
+      overflow-x: auto;
+    }
+
+    .code-block pre {
+      margin: 0;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.875rem;
+      line-height: 1.7;
+      color: #e5e7eb;
+    }
+
+    .code-block .comment { color: #6b7280; }
+    .code-block .keyword { color: #c084fc; }
+    .code-block .string { color: #86efac; }
+    .code-block .function { color: #60a5fa; }
+    .code-block .method { color: #fbbf24; }
+
+    /* CTA Section */
+    .cta {
+      padding: 100px 0;
+      background: white;
+      text-align: center;
+    }
+
+    .cta h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--gray-900);
+    }
+
+    .cta p {
+      color: var(--gray-600);
+      font-size: 1.125rem;
+      max-width: 500px;
+      margin: 0 auto 40px;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* Footer */
+    footer {
+      padding: 60px 0;
+      background: var(--gray-900);
+      color: var(--gray-400);
+    }
+
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: white;
+      font-weight: 600;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 32px;
+    }
+
+    .footer-links a {
+      color: var(--gray-400);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: white;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 2.5rem;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .features {
+        grid-template-columns: 1fr;
+      }
+
+      .principles {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav>
+    <div class="container">
+      <a href="#" class="logo">
+        <div class="logo-icon">FD</div>
+        Federated DevEx
+      </a>
+      <div class="nav-links">
+        <a href="#problem">The Problem</a>
+        <a href="#solution">Solution</a>
+        <a href="#philosophy">Philosophy</a>
+        <a href="/docs">Documentation</a>
+        <a href="/dashboard" class="btn btn-primary">Open Dashboard</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-badge">
+          🚀 Built for developers, by developers
+        </div>
+        <h1>
+          Focus on <span>what you do best</span>.<br>
+          We handle the rest.
+        </h1>
+        <p>
+          A federated platform that eliminates infrastructure friction, 
+          centralizes cross-cutting concerns, and lets engineers 
+          spend time on their expertise—not boilerplate.
+        </p>
+        <div class="hero-buttons">
+          <a href="/dashboard" class="btn btn-primary">
+            🎯 Launch Dashboard
+          </a>
+          <a href="/docs" class="btn btn-secondary">
+            📚 Read the Docs
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Problem Section -->
+  <section class="problem" id="problem">
+    <div class="container">
+      <h2>The Problem We Solve</h2>
+      <p>
+        Engineers waste countless hours on infrastructure concerns 
+        that have nothing to do with their core expertise.
+      </p>
+      <div class="pain-points">
+        <div class="pain-point">
+          <div class="pain-point-icon">🔐</div>
+          <h3>Authentication Chaos</h3>
+          <p>
+            Every team implements their own auth flow. Different patterns, 
+            different bugs, different security vulnerabilities. 
+            Onboarding takes weeks just to understand the auth landscape.
+          </p>
+        </div>
+        <div class="pain-point">
+          <div class="pain-point-icon">🚨</div>
+          <h3>Error Handling Fragmentation</h3>
+          <p>
+            Errors are logged differently everywhere. Some go to console, 
+            some to files, some to third-party services. 
+            Debugging across services is a nightmare.
+          </p>
+        </div>
+        <div class="pain-point">
+          <div class="pain-point-icon">🎨</div>
+          <h3>UI Inconsistency</h3>
+          <p>
+            Every team builds their own components with different styles. 
+            The user experience is fragmented. 
+            Design system adoption is optional at best.
+          </p>
+        </div>
+        <div class="pain-point">
+          <div class="pain-point-icon">📊</div>
+          <h3>Observability Gaps</h3>
+          <p>
+            Metrics are scattered. Traces don't connect. 
+            When something breaks in production, 
+            you're flying blind trying to find the root cause.
+          </p>
+        </div>
+        <div class="pain-point">
+          <div class="pain-point-icon">🔧</div>
+          <h3>CI/CD Complexity</h3>
+          <p>
+            Each project has its own pipeline configuration. 
+            Build scripts are copy-pasted and diverge over time. 
+            Nobody knows how to fix the "other team's" pipeline.
+          </p>
+        </div>
+        <div class="pain-point">
+          <div class="pain-point-icon">📚</div>
+          <h3>Documentation Drift</h3>
+          <p>
+            Docs are outdated the moment they're written. 
+            Nobody knows where the authoritative source is. 
+            Tribal knowledge rules, and it leaves when people do.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Solution Section -->
+  <section class="solution" id="solution">
+    <div class="container">
+      <h2>One Platform. Zero Friction.</h2>
+      <p>
+        We provide centralized, federated APIs for everything that 
+        shouldn't require your expertise to implement.
+      </p>
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">🔐</div>
+          <h3>Centralized Authentication</h3>
+          <p>
+            Microsoft Entra On-Behalf-Of flow with role-based access. 
+            Authenticate once, get roles from a central store, 
+            and pass tokens downstream automatically.
+          </p>
+          <ul class="feature-list">
+            <li>Single auth SDK for all services</li>
+            <li>Roles stored in S3/DynamoDB</li>
+            <li>Permission checking built-in</li>
+            <li>Token refresh handled automatically</li>
+          </ul>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🚨</div>
+          <h3>Unified Error Handling</h3>
+          <p>
+            One API for all error capture. Context-rich, 
+            severity-aware, and automatically routed to the right place.
+          </p>
+          <ul class="feature-list">
+            <li>Fluent API for error capture</li>
+            <li>Automatic context enrichment</li>
+            <li>Centralized error dashboard</li>
+            <li>Severity-based alerting</li>
+          </ul>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🎨</div>
+          <h3>UI Configuration Registry</h3>
+          <p>
+            Consistent component configurations across all applications. 
+            Change the design system in one place, update everywhere.
+          </p>
+          <ul class="feature-list">
+            <li>Centralized component configs</li>
+            <li>Theme management</li>
+            <li>Accessibility built-in</li>
+            <li>Version-controlled design tokens</li>
+          </ul>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📊</div>
+          <h3>Federated Telemetry</h3>
+          <p>
+            Metrics, traces, and logs that actually connect. 
+            See the full picture of your distributed system.
+          </p>
+          <ul class="feature-list">
+            <li>Unified metrics API</li>
+            <li>Distributed tracing</li>
+            <li>Automatic instrumentation</li>
+            <li>Real-time dashboards</li>
+          </ul>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔧</div>
+          <h3>Parameterized Build Scripts</h3>
+          <p>
+            Consistent, tested scripts for building and deploying. 
+            No more copy-paste pipeline configs.
+          </p>
+          <ul class="feature-list">
+            <li>One command to build</li>
+            <li>Environment management</li>
+            <li>Start/stop/restart services</li>
+            <li>Works across all projects</li>
+          </ul>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📚</div>
+          <h3>Documentation as Code</h3>
+          <p>
+            MkDocs-powered documentation that updates automatically. 
+            Linked to builds, tracked in a database, always current.
+          </p>
+          <ul class="feature-list">
+            <li>Auto-generated from code</li>
+            <li>Linked to build pipelines</li>
+            <li>Searchable documentation DB</li>
+            <li>Federated across projects</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Philosophy Section -->
+  <section class="philosophy" id="philosophy">
+    <div class="container">
+      <h2>Our Developer-First Philosophy</h2>
+      <div class="principles">
+        <div class="principle">
+          <div class="principle-number">1</div>
+          <h3>Developers Are Customers</h3>
+          <p>
+            We treat internal developers with the same care 
+            as external customers. Their time is valuable. 
+            Their frustration is our failure.
+          </p>
+        </div>
+        <div class="principle">
+          <div class="principle-number">2</div>
+          <h3>Expertise Over Boilerplate</h3>
+          <p>
+            Game engineers should build games. 
+            Data scientists should analyze data. 
+            Nobody should spend days configuring auth.
+          </p>
+        </div>
+        <div class="principle">
+          <div class="principle-number">3</div>
+          <h3>Fluent Over Friction</h3>
+          <p>
+            APIs should be discoverable and chainable. 
+            If you need to read docs to do something simple, 
+            we've failed at API design.
+          </p>
+        </div>
+        <div class="principle">
+          <div class="principle-number">4</div>
+          <h3>AI-Forward Design</h3>
+          <p>
+            Our APIs are designed for both humans and AI agents. 
+            Minimal boilerplate means better AI code generation 
+            and faster onboarding.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Code Example Section -->
+  <section class="code-example">
+    <div class="container">
+      <h2>Simple, Fluent APIs</h2>
+      <p>
+        See how easy it is to use the platform. 
+        No boilerplate, no configuration, just results.
+      </p>
+      <div class="code-tabs">
+        <button class="code-tab active">Authentication</button>
+        <button class="code-tab">Error Handling</button>
+        <button class="code-tab">Telemetry</button>
+      </div>
+      <div class="code-block">
+        <pre><span class="comment">// Authenticate with Microsoft Entra</span>
+<span class="keyword">const</span> result = <span class="keyword">await</span> <span class="function">sdk</span>.<span class="method">auth</span>()
+  .<span class="method">loginWithCode</span>(<span class="string">authCode</span>)
+  .<span class="method">execute</span>();
+
+<span class="comment">// Check permissions before sensitive operations</span>
+<span class="keyword">if</span> (<span class="keyword">await</span> <span class="function">sdk</span>.<span class="method">auth</span>().<span class="method">hasPermission</span>(<span class="string">'pipelines'</span>, <span class="string">'create'</span>)) {
+  <span class="keyword">await</span> <span class="function">sdk</span>.<span class="method">pipelines</span>().<span class="method">trigger</span>(<span class="string">'my-project'</span>, <span class="string">'main'</span>);
+}
+
+<span class="comment">// On-Behalf-Of flow for downstream services</span>
+<span class="keyword">const</span> downstream = <span class="keyword">await</span> <span class="function">sdk</span>.<span class="method">auth</span>()
+  .<span class="method">onBehalfOf</span>(<span class="string">userToken</span>)
+  .<span class="method">forScopes</span>([<span class="string">'api://downstream/.default'</span>])
+  .<span class="method">execute</span>();</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta">
+    <div class="container">
+      <h2>Ready to Focus on What Matters?</h2>
+      <p>
+        Join the platform and let us handle the infrastructure 
+        so you can build amazing things.
+      </p>
+      <div class="cta-buttons">
+        <a href="/dashboard" class="btn btn-primary">
+          🎯 Open Dashboard
+        </a>
+        <a href="/docs" class="btn btn-secondary">
+          📚 Explore Documentation
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-logo">
+          <div class="logo-icon" style="width: 32px; height: 32px; font-size: 0.9rem;">FD</div>
+          Federated DevEx Platform
+        </div>
+        <div class="footer-links">
+          <a href="/docs">Documentation</a>
+          <a href="/dashboard">Dashboard</a>
+          <a href="https://github.com">GitHub</a>
+          <a href="#">API Reference</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Simple tab switching for code examples
+    document.querySelectorAll('.code-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // In a real implementation, this would switch the code block content
+        const examples = {
+          'Authentication': `<span class="comment">// Authenticate with Microsoft Entra</span>
+<span class="keyword">const</span> result = <span class="keyword">await</span> <span class="function">sdk</span>.<span class="method">auth</span>()
+  .<span class="method">loginWithCode</span>(<span class="string">authCode</span>)
+  .<span class="method">execute</span>();
+
+<span class="comment">// Check permissions before sensitive operations</span>
+<span class="keyword">if</span> (<span class="keyword">await</span> <span class="function">sdk</span>.<span class="method">auth</span>().<span class="method">hasPermission</span>(<span class="string">'pipelines'</span>, <span class="string">'create'</span>)) {
+  <span class="keyword">await</span> <span class="function">sdk</span>.<span class="method">pipelines</span>().<span class="method">trigger</span>(<span class="string">'my-project'</span>, <span class="string">'main'</span>);
+}
+
+<span class="comment">// On-Behalf-Of flow for downstream services</span>
+<span class="keyword">const</span> downstream = <span class="keyword">await</span> <span class="function">sdk</span>.<span class="method">auth</span>()
+  .<span class="method">onBehalfOf</span>(<span class="string">userToken</span>)
+  .<span class="method">forScopes</span>([<span class="string">'api://downstream/.default'</span>])
+  .<span class="method">execute</span>();`,
+          'Error Handling': `<span class="comment">// Capture errors with full context</span>
+<span class="keyword">try</span> {
+  <span class="keyword">await</span> <span class="function">riskyOperation</span>();
+} <span class="keyword">catch</span> (err) {
+  <span class="function">sdk</span>.<span class="method">errors</span>()
+    .<span class="method">capture</span>(err)
+    .<span class="method">withContext</span>({ <span class="string">userId</span>, <span class="string">operation</span>: <span class="string">'checkout'</span> })
+    .<span class="method">inComponent</span>(<span class="string">'PaymentService'</span>)
+    .<span class="method">withSeverity</span>(<span class="string">'error'</span>)
+    .<span class="method">send</span>();
+}
+
+<span class="comment">// Errors automatically appear in the dashboard</span>
+<span class="comment">// with full stack traces and context</span>`,
+          'Telemetry': `<span class="comment">// Track metrics with the fluent API</span>
+<span class="function">sdk</span>.<span class="method">telemetry</span>()
+  .<span class="method">metric</span>(<span class="string">'api.latency'</span>)
+  .<span class="method">value</span>(<span class="string">150</span>)
+  .<span class="method">unit</span>(<span class="string">'ms'</span>)
+  .<span class="method">tags</span>({ <span class="string">endpoint</span>: <span class="string">'/users'</span>, <span class="string">method</span>: <span class="string">'GET'</span> })
+  .<span class="method">send</span>();
+
+<span class="comment">// Time async operations automatically</span>
+<span class="keyword">const</span> result = <span class="keyword">await</span> <span class="function">sdk</span>.<span class="method">telemetry</span>().<span class="method">time</span>(
+  <span class="string">'fetchUserProfile'</span>,
+  () => <span class="function">userService</span>.<span class="method">fetch</span>(<span class="string">userId</span>)
+);`
+        };
+        
+        document.querySelector('.code-block pre').innerHTML = examples[tab.textContent];
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "name": "@federated/core",
+  "version": "1.0.0",
+  "description": "Core SDK for the Federated DevEx Platform - orchestrates all child SDKs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@federated/error-handling": "^1.0.0",
+    "@federated/ui-config": "^1.0.0",
+    "@federated/telemetry": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^20.0.0"
+  },
+  "peerDependencies": {},
+  "keywords": ["sdk", "federated", "core"],
+  "author": "Derick Owens",
+  "license": "MIT"
+}

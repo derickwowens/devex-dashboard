@@ -1,0 +1,107 @@
+site_name: Federated DevEx Platform
+site_description: Developer Experience Platform Documentation - Focus on your expertise, we handle the rest.
+site_author: Federated DevEx Team
+site_url: https://docs.federated-devex.io
+
+repo_name: federated-devex-platform
+repo_url: https://github.com/org/federated-devex-platform
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: blue
+      accent: purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+  font:
+    text: Inter
+    code: JetBrains Mono
+
+plugins:
+  - search
+  - tags
+  - git-revision-date-localized:
+      enable_creation_date: true
+  - macros:
+      module_name: docs_site/macros
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/org/federated-devex-platform
+  generator: false
+  analytics:
+    provider: custom
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quick-start.md
+    - Configuration: getting-started/configuration.md
+  - SDK Reference:
+    - Overview: sdk/overview.md
+    - Authentication: sdk/auth.md
+    - Error Handling: sdk/error-handling.md
+    - UI Configuration: sdk/ui-config.md
+    - Telemetry: sdk/telemetry.md
+    - Pipelines: sdk/pipelines.md
+    - Contacts: sdk/contacts.md
+  - Architecture:
+    - Patterns: architecture/patterns.md
+    - Infrastructure: architecture/infrastructure.md
+    - Decision Records: architecture/adr.md
+  - API Reference:
+    - Facade API: api/facade.md
+    - Auth API: api/auth.md
+    - Error API: api/errors.md
+  - Contributing:
+    - Guidelines: contributing/guidelines.md
+    - Documentation: contributing/documentation.md
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/extra.js

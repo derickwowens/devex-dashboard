@@ -1,0 +1,19 @@
+{
+  "name": "@federated/error-handling",
+  "version": "1.0.0",
+  "description": "Centralized error handling SDK - normalized, ecosystem-wide error capture and reporting",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src --ext .ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^20.0.0"
+  },
+  "keywords": ["error-handling", "federated", "sdk"],
+  "author": "Derick Owens",
+  "license": "MIT"
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@federated/auth",
+  "version": "1.0.0",
+  "description": "Centralized authentication SDK with Microsoft Entra OBO flow and role-based access",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src --ext .ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^20.0.0"
+  },
+  "keywords": ["auth", "entra", "obo", "federated", "sdk", "rbac"],
+  "author": "Derick Owens",
+  "license": "MIT"
+}

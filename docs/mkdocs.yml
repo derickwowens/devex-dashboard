@@ -1,0 +1,86 @@
+site_name: Federated DevEx Platform Documentation
+site_description: Documentation for the Federated Developer Experience Platform
+site_author: Platform Engineering Team
+site_url: https://docs.federated-devex.company.com
+
+repo_name: federated-devex-platform
+repo_url: https://github.com/company/federated-devex-platform
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.copy
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - tags
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - attr_list
+  - md_in_html
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Quick Start: getting-started/quick-start.md
+    - Installation: getting-started/installation.md
+  - SDK Reference:
+    - Overview: sdk/overview.md
+    - Error Handling: sdk/error-handling.md
+    - Authentication: sdk/authentication.md
+    - Telemetry: sdk/telemetry.md
+    - UI Configuration: sdk/ui-config.md
+  - Standards:
+    - Structured Logging: standards/structured-logging.md
+    - Code Style: standards/code-style.md
+  - Architecture:
+    - Patterns: architecture/patterns.md
+    - Infrastructure: architecture/infrastructure.md
+    - ADRs: architecture/adrs.md
+  - API Reference:
+    - Facade API: api/facade.md
+    - Error API: api/errors.md
+    - Auth API: api/auth.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/company/federated-devex-platform
+    - icon: fontawesome/brands/slack
+      link: https://company.slack.com/channels/platform-engineering
+  version:
+    provider: mike
+
+copyright: Copyright &copy; 2026 Platform Engineering Team

@@ -1,0 +1,26 @@
+{
+  "name": "@federated/facade",
+  "version": "1.0.0",
+  "description": "Fluent facade - the thin orchestration layer for the Federated DevEx Platform",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@federated/core": "^1.0.0",
+    "@federated/error-handling": "^1.0.0",
+    "@federated/ui-config": "^1.0.0",
+    "@federated/telemetry": "^1.0.0",
+    "@federated/auth": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^20.0.0"
+  },
+  "keywords": ["facade", "fluent", "sdk", "federated"],
+  "author": "Derick Owens",
+  "license": "MIT"
+}

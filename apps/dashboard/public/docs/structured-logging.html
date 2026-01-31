@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Structured Logging Standard | Federated DevEx Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .prose code {
+      background: #1f2937;
+      color: #10b981;
+      padding: 0.2em 0.4em;
+      border-radius: 0.25rem;
+      font-size: 0.875em;
+    }
+    .prose pre {
+      background: #1f2937;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      overflow-x: auto;
+    }
+    .prose pre code {
+      background: transparent;
+      padding: 0;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-12">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Structured Logging Standard</h1>
+          <p class="text-gray-500">Federated DevEx Platform Error Framework</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4 text-sm text-gray-500">
+        <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded">v1.0.0</span>
+        <span>Last Updated: January 2026</span>
+        <span>Owner: Platform Engineering</span>
+      </div>
+    </div>
+
+    <!-- Philosophy Section -->
+    <section class="mb-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-white">
+      <h2 class="text-2xl font-bold mb-4">🎯 The Philosophy: Fast Triaging</h2>
+      <p class="text-lg mb-6 text-blue-100">
+        Every second spent researching "who owns this error?" is a second not spent fixing it. 
+        Our structured logging standard eliminates this waste entirely.
+      </p>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-white/10 rounded-xl p-4">
+          <h3 class="font-semibold text-red-300 mb-2">❌ Traditional Approach</h3>
+          <p class="text-sm text-blue-100">
+            "Error: Connection failed"<br>
+            <em class="text-blue-200">Who owns this? Where do I file a ticket? Let me search Confluence for 30 minutes...</em>
+          </p>
+        </div>
+        <div class="bg-white/10 rounded-xl p-4">
+          <h3 class="font-semibold text-green-300 mb-2">✅ Our Approach</h3>
+          <p class="text-sm text-blue-100">
+            "AUTH-00142: Connection failed: Platform Auth: auth-team@company.com: #auth-incidents"<br>
+            <em class="text-blue-200">Instant triage. Zero research. File ticket immediately.</em>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Core Principle -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">Core Principle</h2>
+      <div class="bg-yellow-50 border-l-4 border-yellow-500 p-6 rounded-r-xl">
+        <p class="text-lg font-medium text-yellow-800">
+          "Every error message must contain everything needed to route a ticket—no exceptions, no lookups required."
+        </p>
+      </div>
+    </section>
+
+    <!-- The Standard Format -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">The Standard Error Format</h2>
+      <p class="text-gray-600 mb-6">All errors in the ecosystem MUST use this format:</p>
+      
+      <div class="bg-gray-900 rounded-xl p-6 mb-6">
+        <code class="text-green-400 text-lg">
+          [ErrorCode]: [ErrorString]: [TeamName]: [TeamEmail]: [IncidentGroup]
+        </code>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="text-left p-4 font-semibold text-gray-900 border-b">Component</th>
+              <th class="text-left p-4 font-semibold text-gray-900 border-b">Description</th>
+              <th class="text-left p-4 font-semibold text-gray-900 border-b">Example</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <tr>
+              <td class="p-4 font-mono text-blue-600">ErrorCode</td>
+              <td class="p-4 text-gray-600">Unique identifier (SDK_PREFIX-NUMERIC_ID)</td>
+              <td class="p-4 font-mono text-gray-900">AUTH-00142</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-mono text-blue-600">ErrorString</td>
+              <td class="p-4 text-gray-600">Human-readable error message</td>
+              <td class="p-4 font-mono text-gray-900">Token refresh failed</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-mono text-blue-600">TeamName</td>
+              <td class="p-4 text-gray-600">Responsible team</td>
+              <td class="p-4 font-mono text-gray-900">Platform Auth</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-mono text-blue-600">TeamEmail</td>
+              <td class="p-4 text-gray-600">Team contact email</td>
+              <td class="p-4 font-mono text-gray-900">auth-team@company.com</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-mono text-blue-600">IncidentGroup</td>
+              <td class="p-4 text-gray-600">Slack/Teams channel for incidents</td>
+              <td class="p-4 font-mono text-gray-900">#auth-incidents</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Real Examples -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">Real-World Examples</h2>
+      <div class="space-y-4">
+        <div class="bg-gray-900 rounded-xl p-4">
+          <div class="text-xs text-gray-400 mb-2">Authentication Error</div>
+          <code class="text-green-400 text-sm">AUTH-00142: Token refresh failed: invalid grant: Platform Auth: auth-team@company.com: #auth-incidents</code>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-4">
+          <div class="text-xs text-gray-400 mb-2">Pipeline Failure</div>
+          <code class="text-green-400 text-sm">PIPE-00034: Pipeline execution failed: build step timeout: DevOps: devops@company.com: #devops-incidents</code>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-4">
+          <div class="text-xs text-gray-400 mb-2">Telemetry Alert</div>
+          <code class="text-green-400 text-sm">TEL-00023: Memory threshold exceeded - 95% utilization: Observability: observability@company.com: #obs-incidents</code>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stack Traces -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">Stack Trace Format</h2>
+      <p class="text-gray-600 mb-4">The error string MUST appear as the first line of any stack trace:</p>
+      
+      <div class="bg-gray-900 rounded-xl p-4 overflow-x-auto">
+        <pre class="text-sm"><code><span class="text-green-400">AUTH-00142: Token refresh failed: invalid grant: Platform Auth: auth-team@company.com: #auth-incidents</span>
+<span class="text-gray-400">    at AuthService.refreshToken (/src/auth/service.ts:142)
+    at async TokenManager.refresh (/src/auth/token.ts:67)
+    at async middleware (/src/middleware/auth.ts:23)</span></code></pre>
+      </div>
+    </section>
+
+    <!-- SDK Prefixes -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">SDK Error Code Prefixes</h2>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <div class="font-mono text-blue-600 font-semibold">AUTH</div>
+          <div class="text-sm text-gray-600">@federated/auth - Authentication & authorization</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <div class="font-mono text-blue-600 font-semibold">ERR</div>
+          <div class="text-sm text-gray-600">@federated/error-handling - Error infrastructure</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <div class="font-mono text-blue-600 font-semibold">TEL</div>
+          <div class="text-sm text-gray-600">@federated/telemetry - Metrics & observability</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <div class="font-mono text-blue-600 font-semibold">UI</div>
+          <div class="text-sm text-gray-600">@federated/ui-config - UI configuration</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <div class="font-mono text-blue-600 font-semibold">SDK</div>
+          <div class="text-sm text-gray-600">@federated/facade - Main SDK facade</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <div class="font-mono text-blue-600 font-semibold">PIPE</div>
+          <div class="text-sm text-gray-600">@federated/pipelines - CI/CD integration</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Team Ownership Registry -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">Team Ownership Registry</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse bg-white rounded-xl overflow-hidden">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="text-left p-4 font-semibold text-gray-900">SDK</th>
+              <th class="text-left p-4 font-semibold text-gray-900">Team</th>
+              <th class="text-left p-4 font-semibold text-gray-900">Email</th>
+              <th class="text-left p-4 font-semibold text-gray-900">Incident Group</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <tr>
+              <td class="p-4 font-mono text-sm">@federated/auth</td>
+              <td class="p-4">Platform Auth</td>
+              <td class="p-4 text-blue-600">auth-team@company.com</td>
+              <td class="p-4 font-mono text-sm">#auth-incidents</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-mono text-sm">@federated/error-handling</td>
+              <td class="p-4">Platform Core</td>
+              <td class="p-4 text-blue-600">core-team@company.com</td>
+              <td class="p-4 font-mono text-sm">#platform-incidents</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-mono text-sm">@federated/telemetry</td>
+              <td class="p-4">Observability</td>
+              <td class="p-4 text-blue-600">observability@company.com</td>
+              <td class="p-4 font-mono text-sm">#obs-incidents</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-mono text-sm">@federated/ui-config</td>
+              <td class="p-4">Frontend Platform</td>
+              <td class="p-4 text-blue-600">frontend@company.com</td>
+              <td class="p-4 font-mono text-sm">#frontend-incidents</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-mono text-sm">@federated/facade</td>
+              <td class="p-4">Platform Core</td>
+              <td class="p-4 text-blue-600">core-team@company.com</td>
+              <td class="p-4 font-mono text-sm">#platform-incidents</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-mono text-sm">@federated/pipelines</td>
+              <td class="p-4">DevOps</td>
+              <td class="p-4 text-blue-600">devops@company.com</td>
+              <td class="p-4 font-mono text-sm">#devops-incidents</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Benefits -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">Benefits</h2>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+          <div class="font-semibold text-green-800 mb-1">⚡ Faster Triage</div>
+          <div class="text-sm text-green-700">Error ID immediately identifies the issue and owner</div>
+        </div>
+        <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+          <div class="font-semibold text-green-800 mb-1">🎯 Accurate Routing</div>
+          <div class="text-sm text-green-700">Tickets go to the right team automatically</div>
+        </div>
+        <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+          <div class="font-semibold text-green-800 mb-1">🚫 Reduced Toil</div>
+          <div class="text-sm text-green-700">No more "who owns this?" investigations</div>
+        </div>
+        <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+          <div class="font-semibold text-green-800 mb-1">📊 Better Metrics</div>
+          <div class="text-sm text-green-700">Filter and aggregate by SDK, team, or error type</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Usage Example -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">Implementation Example</h2>
+      <div class="bg-gray-900 rounded-xl p-6 overflow-x-auto">
+        <pre class="text-sm"><code class="text-gray-100"><span class="text-blue-400">import</span> { sdk } <span class="text-blue-400">from</span> <span class="text-green-400">'@federated/facade'</span>;
+
+<span class="text-gray-500">// Capture an error with full structured metadata</span>
+sdk.errors()
+  .capture(error)
+  .withErrorId(<span class="text-green-400">'AUTH-00142'</span>)
+  .withSdk(<span class="text-green-400">'@federated/auth'</span>)
+  .withOwnership({
+    team: <span class="text-green-400">'Platform Auth'</span>,
+    email: <span class="text-green-400">'auth-team@company.com'</span>,
+    incidentGroup: <span class="text-green-400">'#auth-incidents'</span>
+  })
+  .withContext({
+    userId: user.id,
+    operation: <span class="text-green-400">'tokenRefresh'</span>,
+    requestId: req.id
+  })
+  .send();</code></pre>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-200 pt-8 text-center text-gray-500 text-sm">
+      <p>For questions or updates to this standard, contact Platform Engineering</p>
+      <p class="mt-2">
+        <a href="mailto:platform@company.com" class="text-blue-600 hover:underline">platform@company.com</a>
+        <span class="mx-2">•</span>
+        <span class="font-mono">#platform-engineering</span>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

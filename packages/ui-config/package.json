@@ -1,0 +1,19 @@
+{
+  "name": "@federated/ui-config",
+  "version": "1.0.0",
+  "description": "Centralized UI component configuration registry for consistent design system",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src --ext .ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^20.0.0"
+  },
+  "keywords": ["ui", "config", "design-system", "federated", "sdk"],
+  "author": "Derick Owens",
+  "license": "MIT"
+}
