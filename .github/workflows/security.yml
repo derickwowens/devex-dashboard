@@ -27,7 +27,6 @@ jobs:
   snyk-dependencies:
     name: Snyk Dependencies
     runs-on: ubuntu-latest
-    if: ${{ secrets.SNYK_TOKEN != '' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -64,7 +63,6 @@ jobs:
   snyk-code:
     name: Snyk Code (SAST)
     runs-on: ubuntu-latest
-    if: ${{ secrets.SNYK_TOKEN != '' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
