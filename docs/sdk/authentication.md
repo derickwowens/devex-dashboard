@@ -2,6 +2,8 @@
 
 The `@federated/auth` package provides centralized authentication using Microsoft Entra with On-Behalf-Of (OBO) flow.
 
+> **Note**: SDK functionality is dynamically controlled by [Fine-Grain Security Policies](./fine-grain-security.md). Users only see SDK capabilities their profile permits.
+
 ## Quick Start
 
 ```typescript

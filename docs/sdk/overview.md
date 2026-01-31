@@ -2,6 +2,26 @@
 
 The Federated DevEx Platform SDK provides a unified interface for common developer concerns including error handling, authentication, telemetry, and UI configuration.
 
+## Role-Based Fine-Grain Security
+
+**SDK functionality is dynamically controlled based on user profiles.** When a user authenticates, the Policy Engine evaluates their roles and permissions, then enables only the SDK capabilities they're authorized to use.
+
+```typescript
+// After login, SDK capabilities are automatically scoped to user's permissions
+const user = await sdk.auth().getCurrentUser();
+console.log(user.sdkCapabilities);
+// ['auth', 'errors:read', 'pipelines:read', 'telemetry:write']
+
+// Methods outside the user's capabilities will throw PermissionDenied
+```
+
+This ensures:
+- **Principle of Least Privilege**: Users only access what they need
+- **Dynamic Feature Access**: Dashboard UI adapts to user's permissions
+- **Audit Compliance**: All capability checks are logged
+
+See [Fine-Grain Security Policy](./fine-grain-security.md) for full documentation.
+
 ## Architecture
 
 ```

@@ -99,9 +99,75 @@ async function fetchGitHub<T>(endpoint: string): Promise<T> {
   return response.json()
 }
 
+interface GitHubSearchReposResponse {
+  total_count: number
+  incomplete_results: boolean
+  items: GitHubRepo[]
+}
+
+interface GitHubUser {
+  login: string
+  id: number
+  avatar_url: string
+  name: string | null
+  email: string | null
+}
+
+async function fetchAuthenticatedUser(): Promise<GitHubUser> {
+  return fetchGitHub<GitHubUser>('/user')
+}
+
+async function fetchReposWithUserCommits(username: string): Promise<GitHubRepo[]> {
+  try {
+    // Calculate date 1 year ago for search filter
+    const oneYearAgo = new Date()
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+    const dateFilter = oneYearAgo.toISOString().split('T')[0] // Format: YYYY-MM-DD
+    
+    // Search for repos where the user has authored commits in the past year
+    const searchResult = await fetchGitHub<GitHubSearchReposResponse>(
+      `/search/repositories?q=author:${username}+pushed:>=${dateFilter}&sort=updated&per_page=100`
+    )
+    return searchResult.items
+  } catch (error) {
+    console.error('Failed to search repos by commit author:', error)
+    return []
+  }
+}
+
 export async function fetchUserRepos(): Promise<GitHubRepo[]> {
-  const repos = await fetchGitHub<GitHubRepo[]>('/user/repos?sort=updated&per_page=100&affiliation=owner,collaborator,organization_member')
-  return repos
+  // Fetch repos user owns or is a collaborator/member of
+  const ownedRepos = await fetchGitHub<GitHubRepo[]>('/user/repos?sort=updated&per_page=100&affiliation=owner,collaborator,organization_member')
+  
+  // Get authenticated user info to search for repos with their commits
+  try {
+    const user = await fetchAuthenticatedUser()
+    const commitRepos = await fetchReposWithUserCommits(user.login)
+    
+    // Merge and deduplicate repos by id
+    const repoMap = new Map<number, GitHubRepo>()
+    
+    // Add owned repos first (they take priority)
+    for (const repo of ownedRepos) {
+      repoMap.set(repo.id, repo)
+    }
+    
+    // Add repos where user has commits (if not already present)
+    for (const repo of commitRepos) {
+      if (!repoMap.has(repo.id)) {
+        repoMap.set(repo.id, repo)
+      }
+    }
+    
+    // Convert back to array and sort by updated_at
+    const allRepos = Array.from(repoMap.values())
+    allRepos.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+    
+    return allRepos
+  } catch (error) {
+    console.error('Failed to fetch repos with user commits, returning owned repos only:', error)
+    return ownedRepos
+  }
 }
 
 export async function fetchRepoCommits(owner: string, repo: string, perPage: number = 10): Promise<GitHubCommit[]> {
