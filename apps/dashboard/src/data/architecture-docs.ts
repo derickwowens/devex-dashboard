@@ -10,7 +10,7 @@
  * To update, modify the source markdown files and run:
  *   npm run sync:docs
  * 
- * Generated: 2026-01-31T19:35:21.383Z
+ * Generated: 2026-01-31T20:10:22.941Z
  */
 
 export interface InfrastructurePattern {
@@ -171,4 +171,4 @@ export const architecturePatterns: ArchitecturePattern[] = [
   }
 ]
 
-export const lastUpdated = '2026-01-31T19:35:21.383Z'
+export const lastUpdated = '2026-01-31T20:10:22.941Z'

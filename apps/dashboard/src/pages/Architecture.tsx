@@ -235,7 +235,7 @@ export function Architecture() {
         </div>
         
         <a 
-          href="http://localhost:8000/architecture/patterns/"
+          href="https://github.com/derickwowens/devex-dashboard/blob/main/docs/architecture/patterns.md"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-700"

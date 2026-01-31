@@ -41,8 +41,8 @@ interface Document {
   status: 'draft' | 'published' | 'archived'
 }
 
-// MkDocs site base URL - update this when deployed
-const MKDOCS_BASE_URL = 'http://localhost:8000'
+// GitHub repository base URL for documentation
+const GITHUB_DOCS_URL = 'https://github.com/derickwowens/devex-dashboard/blob/main/docs'
 
 const demoDocuments: Document[] = [
   {
@@ -50,7 +50,7 @@ const demoDocuments: Document[] = [
     name: 'authentication-guide',
     title: 'Authentication Guide',
     description: 'Complete guide to implementing authentication with Microsoft Entra OBO flow',
-    url: `${MKDOCS_BASE_URL}/sdk/authentication/`,
+    url: `${GITHUB_DOCS_URL}/sdk/authentication.md`,
     type: 'guide',
     packageName: '@federated/auth',
     teamName: 'Platform Auth',
@@ -64,7 +64,7 @@ const demoDocuments: Document[] = [
     name: 'error-handling-reference',
     title: 'Error Handling API Reference',
     description: 'API reference for the centralized error handling SDK',
-    url: `${MKDOCS_BASE_URL}/sdk/error-handling/`,
+    url: `${GITHUB_DOCS_URL}/sdk/error-handling.md`,
     type: 'api-reference',
     packageName: '@federated/error-handling',
     teamName: 'Platform Core',
@@ -78,7 +78,7 @@ const demoDocuments: Document[] = [
     name: 'structured-logging',
     title: 'Structured Logging Standard',
     description: 'Ecosystem standard for error IDs, ownership metadata, and ticket routing. Required reading for all SDK contributors.',
-    url: `${MKDOCS_BASE_URL}/standards/structured-logging/`,
+    url: `${GITHUB_DOCS_URL}/standards/structured-logging.md`,
     type: 'guide',
     packageName: '@federated/error-handling',
     teamName: 'Platform Core',
@@ -92,7 +92,7 @@ const demoDocuments: Document[] = [
     name: 'getting-started',
     title: 'Getting Started',
     description: 'Quick start guide to the Ecosystem Developer Platform',
-    url: `${MKDOCS_BASE_URL}/getting-started/quick-start/`,
+    url: 'https://github.com/derickwowens/devex-dashboard/blob/main/README.md',
     type: 'tutorial',
     teamName: 'Platform Core',
     tags: ['quickstart', 'tutorial', 'beginner'],
@@ -100,15 +100,15 @@ const demoDocuments: Document[] = [
     status: 'published',
   },
   {
-    id: 'doc-installation',
-    name: 'installation',
-    title: 'Installation Guide',
-    description: 'How to install the Ecosystem SDK and its packages',
-    url: `${MKDOCS_BASE_URL}/getting-started/installation/`,
-    type: 'tutorial',
-    teamName: 'Platform Core',
-    tags: ['installation', 'setup', 'npm'],
-    updatedAt: new Date(Date.now() - 86400000),
+    id: 'doc-cicd-philosophy',
+    name: 'cicd-philosophy',
+    title: 'CI/CD Philosophy & GitLab Components',
+    description: 'Our CI/CD philosophy and how to use GitLab Components for standardized pipelines',
+    url: `https://github.com/derickwowens/devex-dashboard/blob/main/pipelines/gitlab/README.md`,
+    type: 'guide',
+    teamName: 'DevOps',
+    tags: ['cicd', 'gitlab', 'components', 'pipelines'],
+    updatedAt: new Date(),
     status: 'published',
   },
   {
@@ -116,7 +116,7 @@ const demoDocuments: Document[] = [
     name: 'sdk-overview',
     title: 'SDK Overview',
     description: 'Complete overview of the Federated SDK architecture and packages',
-    url: `${MKDOCS_BASE_URL}/sdk/overview/`,
+    url: `${GITHUB_DOCS_URL}/sdk/overview.md`,
     type: 'api-reference',
     packageName: '@federated/facade',
     teamName: 'Platform Core',
@@ -129,7 +129,7 @@ const demoDocuments: Document[] = [
     name: 'architecture-patterns',
     title: 'Architecture Patterns',
     description: 'Recommended architecture patterns for the platform',
-    url: `${MKDOCS_BASE_URL}/architecture/patterns/`,
+    url: `${GITHUB_DOCS_URL}/architecture/patterns.md`,
     type: 'architecture',
     teamName: 'Platform Core',
     tags: ['architecture', 'patterns', 'design'],
@@ -141,22 +141,10 @@ const demoDocuments: Document[] = [
     name: 'infrastructure-patterns',
     title: 'Infrastructure Patterns',
     description: 'AWS infrastructure patterns and best practices',
-    url: `${MKDOCS_BASE_URL}/architecture/infrastructure/`,
+    url: `${GITHUB_DOCS_URL}/architecture/infrastructure.md`,
     type: 'architecture',
     teamName: 'DevOps',
     tags: ['infrastructure', 'aws', 'cloud', 'patterns'],
-    updatedAt: new Date(Date.now() - 604800000),
-    status: 'published',
-  },
-  {
-    id: 'doc-adrs',
-    name: 'architecture-decision-records',
-    title: 'Architecture Decision Records',
-    description: 'ADRs documenting key architectural decisions for the platform',
-    url: `${MKDOCS_BASE_URL}/architecture/adrs/`,
-    type: 'adr',
-    teamName: 'Platform Core',
-    tags: ['adr', 'architecture', 'decisions'],
     updatedAt: new Date(Date.now() - 604800000),
     status: 'published',
   },
@@ -165,7 +153,7 @@ const demoDocuments: Document[] = [
     name: 'telemetry-integration',
     title: 'Telemetry Integration Guide',
     description: 'How to integrate telemetry into your services',
-    url: `${MKDOCS_BASE_URL}/sdk/telemetry/`,
+    url: `${GITHUB_DOCS_URL}/sdk/telemetry.md`,
     type: 'guide',
     packageName: '@federated/telemetry',
     teamName: 'Observability',
@@ -175,25 +163,11 @@ const demoDocuments: Document[] = [
     status: 'published',
   },
   {
-    id: 'doc-ui-config',
-    name: 'ui-configuration',
-    title: 'UI Configuration Reference',
-    description: 'Reference for the centralized UI configuration system',
-    url: `${MKDOCS_BASE_URL}/sdk/ui-config/`,
-    type: 'api-reference',
-    packageName: '@federated/ui-config',
-    teamName: 'Frontend Platform',
-    version: '1.0.0',
-    tags: ['ui', 'components', 'design-system', 'configuration'],
-    updatedAt: new Date(),
-    status: 'published',
-  },
-  {
     id: 'doc-code-style',
     name: 'code-style',
     title: 'Code Style Guide',
     description: 'Standard code style and conventions for the Ecosystem platform',
-    url: `${MKDOCS_BASE_URL}/standards/code-style/`,
+    url: `${GITHUB_DOCS_URL}/standards/code-style.md`,
     type: 'guide',
     teamName: 'Platform Core',
     tags: ['code-style', 'standards', 'conventions', 'typescript'],
@@ -205,37 +179,11 @@ const demoDocuments: Document[] = [
     name: 'facade-api',
     title: 'Facade API Reference',
     description: 'Complete API reference for the main SDK entry point',
-    url: `${MKDOCS_BASE_URL}/api/facade/`,
+    url: `${GITHUB_DOCS_URL}/api/facade.md`,
     type: 'api-reference',
     packageName: '@federated/facade',
     teamName: 'Platform Core',
     tags: ['api', 'facade', 'reference'],
-    updatedAt: new Date(),
-    status: 'published',
-  },
-  {
-    id: 'doc-errors-api',
-    name: 'errors-api',
-    title: 'Error API Reference',
-    description: 'Complete API reference for sdk.errors()',
-    url: `${MKDOCS_BASE_URL}/api/errors/`,
-    type: 'api-reference',
-    packageName: '@federated/error-handling',
-    teamName: 'Platform Core',
-    tags: ['api', 'errors', 'reference'],
-    updatedAt: new Date(),
-    status: 'published',
-  },
-  {
-    id: 'doc-auth-api',
-    name: 'auth-api',
-    title: 'Auth API Reference',
-    description: 'Complete API reference for sdk.auth()',
-    url: `${MKDOCS_BASE_URL}/api/auth/`,
-    type: 'api-reference',
-    packageName: '@federated/auth',
-    teamName: 'Platform Auth',
-    tags: ['api', 'auth', 'reference'],
     updatedAt: new Date(),
     status: 'published',
   },
@@ -295,12 +243,13 @@ export function Documentation() {
           <p className="text-gray-500">Federated documentation across all projects</p>
         </div>
         <a 
-          href="/docs" 
+          href="https://github.com/derickwowens/devex-dashboard/tree/main/docs"
           target="_blank"
+          rel="noopener noreferrer"
           className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
         >
           <ExternalLink className="w-4 h-4" />
-          Open Full Docs
+          View on GitHub
         </a>
       </div>
 

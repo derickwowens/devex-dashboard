@@ -209,7 +209,7 @@ export function Errors() {
           <p className="text-gray-500">Centralized error monitoring and analysis</p>
         </div>
         <a
-          href="http://localhost:8000/standards/structured-logging/"
+          href="https://github.com/derickwowens/devex-dashboard/blob/main/docs/standards/structured-logging.md"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-blue-500 text-blue-500 hover:bg-blue-50 transition-colors"

@@ -164,7 +164,7 @@ export function Dashboard() {
           </div>
           <div className="hidden md:flex items-center gap-3">
             <a 
-              href="http://localhost:8000/getting-started/quick-start/"
+              href="https://github.com/derickwowens/devex-dashboard/blob/main/README.md"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
@@ -173,7 +173,7 @@ export function Dashboard() {
               <span>Quick Start</span>
             </a>
             <a 
-              href="http://localhost:8000/"
+              href="https://github.com/derickwowens/devex-dashboard/tree/main/docs"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2 bg-white text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors font-medium"
@@ -321,7 +321,7 @@ export function Dashboard() {
             <p className="text-sm text-gray-500">Reduce friction with the fluent, chainable API</p>
           </div>
           <a 
-            href="http://localhost:8000/sdk/overview/"
+            href="https://github.com/derickwowens/devex-dashboard/blob/main/docs/sdk/overview.md"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700"
@@ -365,7 +365,7 @@ sdk.pipelines().trigger('my-project', 'main').execute();`}</pre>
             </div>
           </div>
           <a 
-            href="http://localhost:8000/getting-started/quick-start/"
+            href="https://github.com/derickwowens/devex-dashboard/blob/main/README.md"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden md:flex items-center gap-2 px-5 py-2.5 bg-white text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors font-semibold"
