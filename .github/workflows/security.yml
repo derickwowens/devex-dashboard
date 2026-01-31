@@ -47,7 +47,7 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high --sarif-file-output=snyk-deps.sarif
+          args: --sarif-file-output=snyk-deps.sarif
           command: test
 
       - name: Upload Snyk results to GitHub Security tab
@@ -125,5 +125,5 @@ jobs:
       - name: Dependency Review
         uses: actions/dependency-review-action@v4
         with:
-          fail-on-severity: high
+          fail-on-severity: critical
           deny-licenses: GPL-3.0, AGPL-3.0

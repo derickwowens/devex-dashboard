@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   Play, 
   Copy, 
   Check,
   Terminal,
-  Boxes
+  Boxes,
+  Loader2
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 
@@ -173,12 +174,226 @@ const contact = sdk.contacts().create({
 
 export function SDKPlayground() {
   const [selectedExample, setSelectedExample] = useState(examples[0])
+  const [code, setCode] = useState(examples[0].code)
+  const [output, setOutput] = useState(examples[0].output)
   const [copied, setCopied] = useState(false)
+  const [running, setRunning] = useState(false)
+  const [hasRun, setHasRun] = useState(false)
+  const [hasError, setHasError] = useState(false)
+
+  // Update code when example changes
+  useEffect(() => {
+    setCode(selectedExample.code)
+    setOutput(selectedExample.output)
+    setHasRun(false)
+  }, [selectedExample])
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(selectedExample.code)
+    await navigator.clipboard.writeText(code)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleRun = async () => {
+    setRunning(true)
+    setHasRun(false)
+    setHasError(false)
+    setOutput('')
+    
+    // Simulate running the code with dynamic parsing
+    await new Promise(resolve => setTimeout(resolve, 800))
+    
+    try {
+      const result = parseAndExecuteCode(code)
+      setOutput(result.output)
+      setHasRun(true)
+      setHasError(false)
+      setRunning(false)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+      setOutput(`❌ Error: ${errorMessage}\n\n` +
+        `Stack trace:\n` +
+        `  at SDKPlayground.handleRun (SDKPlayground.tsx:196)\n` +
+        `  at executeCode (sdk-runtime.ts:42)\n\n` +
+        `💡 Tip: Check your syntax and ensure all SDK methods are valid.`)
+      setHasRun(true)
+      setHasError(true)
+      setRunning(false)
+    }
+  }
+
+  // Parse the code and generate dynamic output
+  const parseAndExecuteCode = (inputCode: string): { output: string; success: boolean } => {
+    const timestamp = new Date().toISOString()
+    const lines = inputCode.trim().split('\n').filter(l => l.trim() && !l.trim().startsWith('//'))
+    
+    if (lines.length === 0) {
+      throw new Error('No executable code found. Add some SDK calls to run.')
+    }
+
+    // Check for common syntax errors
+    const openBraces = (inputCode.match(/\{/g) || []).length
+    const closeBraces = (inputCode.match(/\}/g) || []).length
+    if (openBraces !== closeBraces) {
+      throw new Error(`Syntax error: Mismatched braces. Found ${openBraces} '{' and ${closeBraces} '}'`)
+    }
+
+    const openParens = (inputCode.match(/\(/g) || []).length
+    const closeParens = (inputCode.match(/\)/g) || []).length
+    if (openParens !== closeParens) {
+      throw new Error(`Syntax error: Mismatched parentheses. Found ${openParens} '(' and ${closeParens} ')'`)
+    }
+
+    // Detect SDK methods being called
+    const sdkCalls: string[] = []
+    
+    if (inputCode.includes('sdk.errors()')) {
+      sdkCalls.push('errors')
+    }
+    if (inputCode.includes('sdk.auth()')) {
+      sdkCalls.push('auth')
+    }
+    if (inputCode.includes('sdk.telemetry()')) {
+      sdkCalls.push('telemetry')
+    }
+    if (inputCode.includes('sdk.pipelines()')) {
+      sdkCalls.push('pipelines')
+    }
+    if (inputCode.includes('sdk.ui()')) {
+      sdkCalls.push('ui')
+    }
+    if (inputCode.includes('sdk.contacts()')) {
+      sdkCalls.push('contacts')
+    }
+
+    if (sdkCalls.length === 0 && !inputCode.includes('sdk.')) {
+      throw new Error('No SDK calls detected. Use sdk.errors(), sdk.auth(), sdk.telemetry(), etc.')
+    }
+
+    // Generate dynamic output based on detected calls
+    let output = ''
+
+    if (sdkCalls.includes('errors')) {
+      // Extract error details from code
+      const errorIdMatch = inputCode.match(/withErrorId\(['"]([^'"]+)['"]\)/)
+      const errorId = errorIdMatch ? errorIdMatch[1] : 'ERR-' + Math.random().toString(36).substr(2, 6).toUpperCase()
+      
+      const teamMatch = inputCode.match(/team:\s*['"]([^'"]+)['"]/)
+      const team = teamMatch ? teamMatch[1] : 'Unknown Team'
+      
+      const severityMatch = inputCode.match(/withSeverity\(['"]([^'"]+)['"]\)/)
+      const severity = severityMatch ? severityMatch[1] : 'error'
+
+      output += `✓ Error captured and sent successfully\n\n`
+      output += JSON.stringify({
+        id: `err_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        errorId: errorId,
+        severity: severity,
+        team: team,
+        timestamp: timestamp,
+        ticketCreated: `#INC-${Math.floor(Math.random() * 9000) + 1000}`
+      }, null, 2)
+    }
+
+    if (sdkCalls.includes('telemetry')) {
+      // Extract metric details
+      const metricMatch = inputCode.match(/metric\(['"]([^'"]+)['"]\)/)
+      const metricName = metricMatch ? metricMatch[1] : 'custom.metric'
+      
+      const valueMatch = inputCode.match(/value\((\d+)\)/)
+      const value = valueMatch ? parseInt(valueMatch[1]) : Math.floor(Math.random() * 100)
+      
+      const unitMatch = inputCode.match(/unit\(['"]([^'"]+)['"]\)/)
+      const unit = unitMatch ? unitMatch[1] : 'count'
+
+      if (output) output += '\n\n---\n\n'
+      output += `✓ Telemetry data sent\n\n`
+      output += JSON.stringify({
+        name: metricName,
+        value: value,
+        unit: unit,
+        timestamp: timestamp,
+        dashboardUrl: `https://metrics.example.com/${metricName.replace('.', '/')}`
+      }, null, 2)
+    }
+
+    if (sdkCalls.includes('pipelines')) {
+      // Extract pipeline details
+      const projectMatch = inputCode.match(/trigger\(['"]([^'"]+)['"]/)
+      const project = projectMatch ? projectMatch[1] : 'my-project'
+      
+      const branchMatch = inputCode.match(/trigger\([^,]+,\s*['"]([^'"]+)['"]/)
+      const branch = branchMatch ? branchMatch[1] : 'main'
+
+      if (output) output += '\n\n---\n\n'
+      output += `✓ Pipeline triggered successfully\n\n`
+      output += JSON.stringify({
+        runId: `run-${Math.random().toString(36).substr(2, 8)}`,
+        project: project,
+        branch: branch,
+        status: 'queued',
+        triggeredAt: timestamp,
+        url: `https://github.com/${project}/actions/runs/${Math.floor(Math.random() * 9000000000) + 1000000000}`
+      }, null, 2)
+    }
+
+    if (sdkCalls.includes('auth')) {
+      if (output) output += '\n\n---\n\n'
+      output += `✓ Authentication successful\n\n`
+      output += JSON.stringify({
+        userId: `user-${Math.random().toString(36).substr(2, 8)}`,
+        email: 'user@company.com',
+        permissions: ['pipelines:read', 'pipelines:create', 'errors:read'],
+        expiresAt: new Date(Date.now() + 3600000).toISOString()
+      }, null, 2)
+    }
+
+    if (sdkCalls.includes('ui')) {
+      const componentMatch = inputCode.match(/component\(['"]([^'"]+)['"]\)/)
+      const component = componentMatch ? componentMatch[1] : 'button'
+      
+      const variantMatch = inputCode.match(/variant\(['"]([^'"]+)['"]\)/)
+      const variant = variantMatch ? variantMatch[1] : 'primary'
+
+      if (output) output += '\n\n---\n\n'
+      output += `✓ UI configuration retrieved\n\n`
+      output += JSON.stringify({
+        component: component,
+        variant: variant,
+        className: `btn btn-${variant} inline-flex items-center justify-center`,
+        styles: {
+          backgroundColor: variant === 'primary' ? '#3b82f6' : '#6b7280',
+          color: '#ffffff',
+          borderRadius: '0.375rem'
+        }
+      }, null, 2)
+    }
+
+    if (sdkCalls.includes('contacts')) {
+      const searchMatch = inputCode.match(/search\(['"]([^'"]+)['"]\)/)
+      const searchTerm = searchMatch ? searchMatch[1] : ''
+
+      if (output) output += '\n\n---\n\n'
+      output += `✓ Contacts query executed\n\n`
+      output += JSON.stringify([
+        {
+          id: `contact-${Math.random().toString(36).substr(2, 6)}`,
+          name: 'Jane Smith',
+          email: 'jane.smith@company.com',
+          title: 'Senior Engineer',
+          team: 'Platform',
+          matchedOn: searchTerm || 'all'
+        }
+      ], null, 2)
+    }
+
+    if (!output) {
+      output = `✓ Code executed\n\nNo output to display. SDK calls were processed successfully.`
+    }
+
+    output += `\n\n// Executed at ${new Date().toLocaleTimeString()}`
+
+    return { output, success: true }
   }
 
   return (
@@ -211,21 +426,27 @@ export function SDKPlayground() {
 
         {/* Code Editor */}
         <div className="lg:col-span-3 space-y-4">
-          {/* Code Block */}
+          {/* Code Editor */}
           <div className="bg-gray-900 rounded-xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
               <div className="flex items-center gap-2 text-gray-300">
                 <Boxes className="w-4 h-4" />
                 <span className="text-sm font-medium">{selectedExample.name}</span>
+                <span className="text-xs text-gray-500 ml-2">• Click to edit</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleCopy}
-                  className="flex items-center gap-1 px-3 py-1 text-sm text-gray-300 hover:text-white transition-colors"
+                  className={cn(
+                    "flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition-all",
+                    copied 
+                      ? "bg-green-600 text-white" 
+                      : "text-gray-300 hover:text-white hover:bg-gray-700"
+                  )}
                 >
                   {copied ? (
                     <>
-                      <Check className="w-4 h-4 text-green-400" />
+                      <Check className="w-4 h-4" />
                       Copied!
                     </>
                   ) : (
@@ -235,25 +456,87 @@ export function SDKPlayground() {
                     </>
                   )}
                 </button>
-                <button className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors">
-                  <Play className="w-4 h-4" />
-                  Run
+                <button 
+                  onClick={handleRun}
+                  disabled={running}
+                  className={cn(
+                    "flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition-all",
+                    running
+                      ? "bg-green-500 text-white cursor-not-allowed"
+                      : "bg-green-600 text-white hover:bg-green-700"
+                  )}
+                >
+                  {running ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Running...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4" />
+                      Run
+                    </>
+                  )}
                 </button>
               </div>
             </div>
-            <pre className="p-4 text-sm font-mono text-gray-100 overflow-x-auto scrollbar-thin">
-              <code>{selectedExample.code}</code>
-            </pre>
+            <textarea
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className="w-full bg-gray-900 text-gray-100 font-mono text-sm p-4 min-h-[300px] resize-y focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-inset border-none"
+              spellCheck={false}
+              placeholder="Edit your code here..."
+            />
           </div>
 
           {/* Output */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-gray-50">
-              <Terminal className="w-4 h-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">Output</span>
+          <div className={cn(
+            "rounded-xl border overflow-hidden transition-all",
+            hasRun && !hasError && "border-green-300 bg-green-50/30",
+            hasRun && hasError && "border-red-300 bg-red-50/30",
+            !hasRun && "border-gray-200 bg-white"
+          )}>
+            <div className={cn(
+              "flex items-center gap-2 px-4 py-3 border-b",
+              hasRun && !hasError && "border-green-200 bg-green-50",
+              hasRun && hasError && "border-red-200 bg-red-50",
+              !hasRun && "border-gray-200 bg-gray-50"
+            )}>
+              <Terminal className={cn(
+                "w-4 h-4", 
+                hasRun && !hasError && "text-green-600",
+                hasRun && hasError && "text-red-600",
+                !hasRun && "text-gray-500"
+              )} />
+              <span className={cn(
+                "text-sm font-medium", 
+                hasRun && !hasError && "text-green-700",
+                hasRun && hasError && "text-red-700",
+                !hasRun && "text-gray-700"
+              )}>
+                {hasRun && !hasError && "Output (Success)"}
+                {hasRun && hasError && "Output (Error)"}
+                {!hasRun && "Output (Preview)"}
+              </span>
+              {hasRun && !hasError && (
+                <span className="ml-auto text-xs text-green-600 flex items-center gap-1">
+                  <Check className="w-3 h-3" />
+                  Success
+                </span>
+              )}
+              {hasRun && hasError && (
+                <span className="ml-auto text-xs text-red-600 flex items-center gap-1">
+                  ✕ Failed
+                </span>
+              )}
             </div>
-            <pre className="p-4 text-sm font-mono text-gray-700 overflow-x-auto scrollbar-thin bg-gray-50/50">
-              <code>{selectedExample.output}</code>
+            <pre className={cn(
+              "p-4 text-sm font-mono overflow-x-auto scrollbar-thin whitespace-pre-wrap",
+              hasRun && !hasError && "text-green-800 bg-green-50/50",
+              hasRun && hasError && "text-red-800 bg-red-50/50",
+              !hasRun && "text-gray-700 bg-gray-50/50"
+            )}>
+              <code>{output}</code>
             </pre>
           </div>
 
@@ -283,6 +566,7 @@ export function SDKPlayground() {
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>

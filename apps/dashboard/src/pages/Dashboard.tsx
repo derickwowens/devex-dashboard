@@ -13,15 +13,24 @@ import {
   Zap,
   BookOpen,
   ArrowRight,
-  Globe2
+  Globe2,
+  ChevronDown,
+  ChevronRight,
+  GitCommit,
+  ExternalLink,
+  Timer,
+  Play
 } from 'lucide-react'
-import { cn, formatRelativeTime } from '../lib/utils'
+import { cn, formatRelativeTime, formatDuration } from '../lib/utils'
 import { useGitHubRepos, useGitHubWorkflowRuns } from '../hooks/useGitHub'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { ApiExplorer } from '../components/ApiExplorer'
+import { SecurityScans } from '../components/SecurityScans'
 
 export function Dashboard() {
   const { repos, loading: reposLoading, error: reposError } = useGitHubRepos()
   const { runs, loading: runsLoading, error: runsError } = useGitHubWorkflowRuns(repos, 10)
+  const [expandedPipelineId, setExpandedPipelineId] = useState<number | null>(null)
 
   const stats = useMemo(() => {
     const totalRepos = repos.length
@@ -99,12 +108,30 @@ export function Dashboard() {
         status = 'pending'
       }
 
+      const startedAt = run.run_started_at ? new Date(run.run_started_at) : null
+      const updatedAt = new Date(run.updated_at)
+      const duration = startedAt && run.status === 'completed' 
+        ? updatedAt.getTime() - startedAt.getTime() 
+        : null
+
       return {
         id: run.id,
         project: run.repository.name,
+        fullRepoName: run.repository.full_name,
         branch: run.head_branch,
         status,
-        time: formatRelativeTime(new Date(run.created_at))
+        time: formatRelativeTime(new Date(run.created_at)),
+        // Extended data for expanded view
+        workflowName: run.name,
+        workflowId: run.workflow_id,
+        conclusion: run.conclusion,
+        headSha: run.head_sha,
+        commitMessage: run.head_commit?.message || 'No commit message',
+        commitAuthor: run.head_commit?.author?.name || run.actor?.login || 'Unknown',
+        createdAt: new Date(run.created_at),
+        startedAt,
+        duration,
+        url: run.html_url
       }
     })
   }, [runs])
@@ -249,36 +276,124 @@ export function Dashboard() {
                 No active pipelines found
               </div>
             ) : (
-              recentPipelines.map((pipeline) => (
-                <div key={pipeline.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50">
-                  <div className="flex items-center gap-3">
-                    {pipeline.status === 'success' && (
-                      <CheckCircle2 className="w-5 h-5 text-green-500" />
-                    )}
-                    {pipeline.status === 'failed' && (
-                      <XCircle className="w-5 h-5 text-red-500" />
-                    )}
-                    {pipeline.status === 'running' && (
-                      <Activity className="w-5 h-5 text-blue-500 animate-pulse" />
-                    )}
-                    {pipeline.status === 'pending' && (
-                      <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
-                    )}
-                    
-                    <div>
-                      <div className="font-medium text-gray-900 truncate max-w-[200px]" title={pipeline.project}>
-                        {pipeline.project}
+              recentPipelines.map((pipeline) => {
+                const isExpanded = expandedPipelineId === pipeline.id
+                
+                return (
+                  <div key={pipeline.id}>
+                    {/* Pipeline Row */}
+                    <div 
+                      className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer"
+                      onClick={() => setExpandedPipelineId(isExpanded ? null : pipeline.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        {isExpanded ? (
+                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-gray-400" />
+                        )}
+                        {pipeline.status === 'success' && (
+                          <CheckCircle2 className="w-5 h-5 text-green-500" />
+                        )}
+                        {pipeline.status === 'failed' && (
+                          <XCircle className="w-5 h-5 text-red-500" />
+                        )}
+                        {pipeline.status === 'running' && (
+                          <Activity className="w-5 h-5 text-blue-500 animate-pulse" />
+                        )}
+                        {pipeline.status === 'pending' && (
+                          <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
+                        )}
+                        
+                        <div>
+                          <div className="font-medium text-gray-900 truncate max-w-[200px]" title={pipeline.project}>
+                            {pipeline.project}
+                          </div>
+                          <div className="text-sm text-gray-500 flex gap-2">
+                            <span className="font-mono">{pipeline.branch}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-500 flex gap-2">
-                        <span className="font-mono">{pipeline.branch}</span>
+                      <div className="text-sm text-gray-500 whitespace-nowrap">
+                        {pipeline.time}
                       </div>
                     </div>
+                    
+                    {/* Expanded Details */}
+                    {isExpanded && (
+                      <div className="px-5 py-4 bg-gray-50 border-t border-gray-100">
+                        <div className="ml-7 space-y-3">
+                          {/* Info Grid */}
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Play className="w-3.5 h-3.5 text-purple-500" />
+                                <span className="text-gray-500">Workflow:</span>
+                                <span className="text-gray-900 font-medium">{pipeline.workflowName}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <GitCommit className="w-3.5 h-3.5 text-orange-500" />
+                                <span className="text-gray-500">Commit:</span>
+                                <span className="text-gray-600 font-mono text-xs">{pipeline.headSha.substring(0, 7)}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Timer className="w-3.5 h-3.5 text-blue-500" />
+                                <span className="text-gray-500">Duration:</span>
+                                <span className="text-gray-900">{pipeline.duration ? formatDuration(pipeline.duration) : 'In progress...'}</span>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <div>
+                                <span className="text-gray-500">Message:</span>
+                                <span className="text-gray-900 ml-2 line-clamp-1">{pipeline.commitMessage.split('\n')[0]}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Author:</span>
+                                <span className="text-gray-900 ml-2">{pipeline.commitAuthor}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Status:</span>
+                                <span className={cn(
+                                  "ml-2 font-medium",
+                                  pipeline.conclusion === 'success' && "text-green-600",
+                                  pipeline.conclusion === 'failure' && "text-red-600",
+                                  !pipeline.conclusion && "text-blue-600"
+                                )}>
+                                  {pipeline.conclusion || 'Running'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Action Links */}
+                          <div className="flex items-center gap-3 pt-2">
+                            <a
+                              href={pipeline.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs rounded-lg hover:bg-primary/90 transition-colors"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              View on GitHub
+                            </a>
+                            <a
+                              href={`https://github.com/${pipeline.fullRepoName}/commit/${pipeline.headSha}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 text-gray-700 text-xs rounded-lg hover:bg-gray-100 transition-colors"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <GitCommit className="w-3.5 h-3.5" />
+                              View Commit
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="text-sm text-gray-500 whitespace-nowrap">
-                    {pipeline.time}
-                  </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         </div>
@@ -313,44 +428,11 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Ecosystem API Quick Reference */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-          <div>
-            <h2 className="font-semibold text-gray-900">Ecosystem API — One Import, Everything You Need</h2>
-            <p className="text-sm text-gray-500">Reduce friction with the fluent, chainable API</p>
-          </div>
-          <a 
-            href="https://github.com/derickwowens/devex-dashboard/blob/main/docs/sdk/overview.md"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700"
-          >
-            Full API Docs
-            <ArrowRight className="w-4 h-4" />
-          </a>
-        </div>
-        <div className="bg-gray-900 p-4 font-mono text-sm overflow-x-auto">
-          <pre className="text-gray-100">{`import { sdk } from '@federated/facade';
+      {/* Ecosystem API Explorer */}
+      <ApiExplorer />
 
-// 🔐 Authentication — No custom auth logic needed
-await sdk.auth().loginWithCode(code).execute();
-if (await sdk.auth().hasPermission('pipelines', 'create')) { ... }
-
-// 🚨 Error Handling — Fast triage with ownership routing
-sdk.errors()
-  .capture(err)
-  .withErrorId('AUTH-00142')
-  .withOwnership({ team: 'Platform Auth', email: 'auth@co.com', incidentGroup: '#auth' })
-  .send();
-
-// 📊 Telemetry — Metrics without the boilerplate
-sdk.telemetry().metric('api.latency').value(150).unit('ms').send();
-
-// 🚀 Pipelines — CI/CD operations at your fingertips
-sdk.pipelines().trigger('my-project', 'main').execute();`}</pre>
-        </div>
-      </div>
+      {/* Security Scans */}
+      <SecurityScans />
 
       {/* Onboarding CTA */}
       <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl p-6 text-white">
