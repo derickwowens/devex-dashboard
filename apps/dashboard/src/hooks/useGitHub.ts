@@ -3,9 +3,12 @@ import {
   fetchUserRepos,
   fetchAllWorkflowRuns,
   fetchAllCommits,
+  fetchAllPackageJsons,
+  fetchRepoEnvExample,
   type GitHubRepo,
   type GitHubWorkflowRun,
-  type GitHubCommit
+  type GitHubCommit,
+  type PackageJson
 } from '../services/github'
 
 interface UseGitHubReposResult {
@@ -157,4 +160,103 @@ export function useGitHubCommits(repos: GitHubRepo[], perRepo: number = 5): UseG
   const refetch = () => setRefetchTrigger(prev => prev + 1)
 
   return { commits, loading, error, refetch }
+}
+
+interface UseGitHubPackageJsonsResult {
+  packageJsons: Map<string, PackageJson>
+  loading: boolean
+  error: Error | null
+  refetch: () => void
+}
+
+export function useGitHubPackageJsons(repos: GitHubRepo[]): UseGitHubPackageJsonsResult {
+  const [packageJsons, setPackageJsons] = useState<Map<string, PackageJson>>(new Map())
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  const [refetchTrigger, setRefetchTrigger] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadPackageJsons() {
+      if (repos.length === 0) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        setLoading(true)
+        setError(null)
+        const data = await fetchAllPackageJsons(repos)
+        if (!cancelled) {
+          setPackageJsons(data)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err : new Error('Failed to fetch package.json files'))
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadPackageJsons()
+
+    return () => {
+      cancelled = true
+    }
+  }, [repos, refetchTrigger])
+
+  const refetch = () => setRefetchTrigger(prev => prev + 1)
+
+  return { packageJsons, loading, error, refetch }
+}
+
+interface UseGitHubEnvVarsResult {
+  envVars: Map<string, string[]>
+  loading: boolean
+}
+
+export function useGitHubEnvVars(repos: GitHubRepo[]): UseGitHubEnvVarsResult {
+  const [envVars, setEnvVars] = useState<Map<string, string[]>>(new Map())
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadEnvVars() {
+      if (repos.length === 0) {
+        setLoading(false)
+        return
+      }
+
+      const envMap = new Map<string, string[]>()
+      
+      for (const repo of repos) {
+        try {
+          const vars = await fetchRepoEnvExample(repo.owner.login, repo.name)
+          if (vars && !cancelled) {
+            envMap.set(repo.name, vars)
+          }
+        } catch {
+          // Ignore errors for individual repos
+        }
+      }
+
+      if (!cancelled) {
+        setEnvVars(envMap)
+        setLoading(false)
+      }
+    }
+
+    loadEnvVars()
+
+    return () => {
+      cancelled = true
+    }
+  }, [repos])
+
+  return { envVars, loading }
 }

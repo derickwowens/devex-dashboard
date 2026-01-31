@@ -1,0 +1,237 @@
+# =============================================================================
+# Security Scanning Component
+# =============================================================================
+# Standardized security scanning templates using Snyk and GitLab native tools
+# This component can be included by any team to get consistent security scans
+# =============================================================================
+
+spec:
+  inputs:
+    stage:
+      default: security
+    snyk_org:
+      default: "federated-devex"
+    severity_threshold:
+      default: "high"
+    fail_on_issues:
+      default: false
+
+---
+
+# Snyk dependency vulnerability scanning
+.snyk-dependency-scan:
+  stage: $[[ inputs.stage ]]
+  image: snyk/snyk:node
+  variables:
+    SNYK_ORG: $[[ inputs.snyk_org ]]
+    SNYK_SEVERITY_THRESHOLD: $[[ inputs.severity_threshold ]]
+  before_script:
+    - mkdir -p security-reports
+  script:
+    - |
+      echo "=== Snyk Dependency Vulnerability Scan ==="
+      echo "Organization: $SNYK_ORG"
+      echo "Severity Threshold: $SNYK_SEVERITY_THRESHOLD"
+      echo ""
+      
+      # Run dependency scan
+      snyk test \
+        --org=$SNYK_ORG \
+        --severity-threshold=$SNYK_SEVERITY_THRESHOLD \
+        --json-file-output=security-reports/snyk-deps.json \
+        --sarif-file-output=security-reports/snyk-deps.sarif \
+        || SCAN_EXIT_CODE=$?
+      
+      # Monitor for continuous tracking
+      snyk monitor --org=$SNYK_ORG || true
+      
+      # Generate summary
+      if [ -f "security-reports/snyk-deps.json" ]; then
+        echo ""
+        echo "=== Vulnerability Summary ==="
+        cat security-reports/snyk-deps.json | jq '{
+          total: .vulnerabilities | length,
+          critical: [.vulnerabilities[] | select(.severity == "critical")] | length,
+          high: [.vulnerabilities[] | select(.severity == "high")] | length,
+          medium: [.vulnerabilities[] | select(.severity == "medium")] | length,
+          low: [.vulnerabilities[] | select(.severity == "low")] | length
+        }'
+      fi
+      
+      # Fail if configured and issues found
+      if [ "$[[ inputs.fail_on_issues ]]" == "true" ] && [ "${SCAN_EXIT_CODE:-0}" -ne 0 ]; then
+        exit $SCAN_EXIT_CODE
+      fi
+  artifacts:
+    paths:
+      - security-reports/
+    reports:
+      dependency_scanning: gl-dependency-scanning-report.json
+    expire_in: 30 days
+  allow_failure: $[[ inputs.fail_on_issues ]] != "true"
+
+# Snyk code analysis (SAST)
+.snyk-code-scan:
+  stage: $[[ inputs.stage ]]
+  image: snyk/snyk:node
+  variables:
+    SNYK_ORG: $[[ inputs.snyk_org ]]
+    SNYK_SEVERITY_THRESHOLD: $[[ inputs.severity_threshold ]]
+  before_script:
+    - mkdir -p security-reports
+  script:
+    - |
+      echo "=== Snyk Code Analysis (SAST) ==="
+      
+      snyk code test \
+        --org=$SNYK_ORG \
+        --severity-threshold=$SNYK_SEVERITY_THRESHOLD \
+        --json-file-output=security-reports/snyk-code.json \
+        --sarif-file-output=security-reports/snyk-code.sarif \
+        || true
+      
+      # Generate summary
+      if [ -f "security-reports/snyk-code.json" ]; then
+        echo ""
+        echo "=== Code Issues Summary ==="
+        cat security-reports/snyk-code.json | jq '{
+          total: .runs[0].results | length,
+          error: [.runs[0].results[] | select(.level == "error")] | length,
+          warning: [.runs[0].results[] | select(.level == "warning")] | length,
+          note: [.runs[0].results[] | select(.level == "note")] | length
+        }' 2>/dev/null || echo "No issues found or unable to parse results"
+      fi
+  artifacts:
+    paths:
+      - security-reports/
+    reports:
+      sast: gl-sast-report.json
+    expire_in: 30 days
+
+# Snyk container image scanning
+.snyk-container-scan:
+  stage: $[[ inputs.stage ]]
+  image: snyk/snyk:docker
+  services:
+    - docker:24-dind
+  variables:
+    SNYK_ORG: $[[ inputs.snyk_org ]]
+    SNYK_SEVERITY_THRESHOLD: $[[ inputs.severity_threshold ]]
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
+    - mkdir -p security-reports
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - |
+      echo "=== Snyk Container Image Scan ==="
+      echo "Image: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
+      
+      snyk container test \
+        $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA \
+        --org=$SNYK_ORG \
+        --severity-threshold=$SNYK_SEVERITY_THRESHOLD \
+        --json-file-output=security-reports/snyk-container.json \
+        || true
+      
+      # Monitor container for continuous tracking
+      snyk container monitor \
+        $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA \
+        --org=$SNYK_ORG \
+        || true
+  artifacts:
+    paths:
+      - security-reports/
+    reports:
+      container_scanning: gl-container-scanning-report.json
+    expire_in: 30 days
+  rules:
+    - exists:
+        - Dockerfile
+
+# Snyk Infrastructure as Code scanning
+.snyk-iac-scan:
+  stage: $[[ inputs.stage ]]
+  image: snyk/snyk:node
+  variables:
+    SNYK_ORG: $[[ inputs.snyk_org ]]
+    SNYK_SEVERITY_THRESHOLD: $[[ inputs.severity_threshold ]]
+  before_script:
+    - mkdir -p security-reports
+  script:
+    - |
+      echo "=== Snyk Infrastructure as Code Scan ==="
+      
+      # Scan Terraform files
+      if [ -d "terraform" ] || ls *.tf 1> /dev/null 2>&1; then
+        echo "Scanning Terraform configurations..."
+        snyk iac test \
+          --org=$SNYK_ORG \
+          --severity-threshold=$SNYK_SEVERITY_THRESHOLD \
+          --json-file-output=security-reports/snyk-iac-terraform.json \
+          --sarif-file-output=security-reports/snyk-iac-terraform.sarif \
+          terraform/ *.tf 2>/dev/null || true
+      fi
+      
+      # Scan Kubernetes manifests
+      if [ -d "k8s" ] || [ -d "kubernetes" ]; then
+        echo "Scanning Kubernetes manifests..."
+        snyk iac test \
+          --org=$SNYK_ORG \
+          --severity-threshold=$SNYK_SEVERITY_THRESHOLD \
+          --json-file-output=security-reports/snyk-iac-k8s.json \
+          k8s/ kubernetes/ 2>/dev/null || true
+      fi
+      
+      # Scan CloudFormation
+      if ls *.yaml 1> /dev/null 2>&1 || ls *.yml 1> /dev/null 2>&1; then
+        echo "Scanning CloudFormation/YAML configurations..."
+        snyk iac test \
+          --org=$SNYK_ORG \
+          --severity-threshold=$SNYK_SEVERITY_THRESHOLD \
+          --json-file-output=security-reports/snyk-iac-cfn.json \
+          . || true
+      fi
+  artifacts:
+    paths:
+      - security-reports/
+    expire_in: 30 days
+  rules:
+    - exists:
+        - terraform/**/*
+        - k8s/**/*
+        - kubernetes/**/*
+        - "*.tf"
+
+# Combined security scan (all Snyk scans in parallel)
+.snyk-full-scan:
+  stage: $[[ inputs.stage ]]
+  image: snyk/snyk:node
+  parallel:
+    matrix:
+      - SCAN_TYPE: [dependencies, code, iac]
+  variables:
+    SNYK_ORG: $[[ inputs.snyk_org ]]
+    SNYK_SEVERITY_THRESHOLD: $[[ inputs.severity_threshold ]]
+  before_script:
+    - mkdir -p security-reports
+  script:
+    - |
+      case "$SCAN_TYPE" in
+        dependencies)
+          snyk test --org=$SNYK_ORG --severity-threshold=$SNYK_SEVERITY_THRESHOLD \
+            --json-file-output=security-reports/snyk-deps.json || true
+          ;;
+        code)
+          snyk code test --org=$SNYK_ORG --severity-threshold=$SNYK_SEVERITY_THRESHOLD \
+            --json-file-output=security-reports/snyk-code.json || true
+          ;;
+        iac)
+          snyk iac test --org=$SNYK_ORG --severity-threshold=$SNYK_SEVERITY_THRESHOLD \
+            --json-file-output=security-reports/snyk-iac.json || true
+          ;;
+      esac
+  artifacts:
+    paths:
+      - security-reports/
+    expire_in: 30 days

@@ -8,6 +8,8 @@ import { CodeReview } from './pages/CodeReview'
 import { SDKPlayground } from './pages/SDKPlayground'
 import { Documentation } from './pages/Documentation'
 import { Projects } from './pages/Projects'
+import { CICDPhilosophy } from './pages/CICDPhilosophy'
+import { Architecture } from './pages/Architecture'
 import { Chatbot } from './components/Chatbot'
 
 function App() {
@@ -17,6 +19,8 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="pipelines" element={<Pipelines />} />
+          <Route path="cicd-philosophy" element={<CICDPhilosophy />} />
+          <Route path="architecture" element={<Architecture />} />
           <Route path="errors" element={<Errors />} />
           <Route path="contacts" element={<Contacts />} />
           <Route path="code-review" element={<CodeReview />} />

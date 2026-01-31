@@ -12,8 +12,8 @@ This document defines the **Structured Logging Standard** for the Federated DevE
 
 Traditional error logging often lacks the context needed to quickly resolve issues:
 
-- ❌ "Error: Connection failed" — *Who owns this? Where do I file a ticket?*
-- ✅ `[AUTH-00142] Connection failed` — *Auth team, auth-team@company.com, #auth-incidents*
+- "Error: Connection failed" — *Who owns this? Where do I file a ticket?*
+- `[AUTH-00142] Connection failed` — *Auth team, auth-team@company.com, #auth-incidents*
 
 Structured logging eliminates guesswork by embedding ownership and routing information directly in every error.
 

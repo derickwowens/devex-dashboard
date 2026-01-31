@@ -1,0 +1,89 @@
+# =============================================================================
+# Quality Gates Component
+# =============================================================================
+# Reusable quality gate templates for enforcing code standards across teams
+# Usage: include this component and extend the jobs as needed
+# =============================================================================
+
+spec:
+  inputs:
+    stage:
+      default: quality
+    coverage_threshold:
+      default: 80
+    complexity_threshold:
+      default: 15
+    duplication_threshold:
+      default: 3
+
+---
+
+# Quality gate that blocks pipeline if thresholds not met
+.quality-gate:
+  stage: $[[ inputs.stage ]]
+  image: node:20-alpine
+  variables:
+    COVERAGE_THRESHOLD: $[[ inputs.coverage_threshold ]]
+    COMPLEXITY_THRESHOLD: $[[ inputs.complexity_threshold ]]
+    DUPLICATION_THRESHOLD: $[[ inputs.duplication_threshold ]]
+  script:
+    - |
+      echo "Evaluating quality gates..."
+      
+      # Check coverage threshold
+      if [ -f "coverage/coverage-summary.json" ]; then
+        COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
+        echo "Coverage: $COVERAGE% (threshold: $COVERAGE_THRESHOLD%)"
+        if (( $(echo "$COVERAGE < $COVERAGE_THRESHOLD" | bc -l) )); then
+          echo "FAILED: Coverage below threshold"
+          exit 1
+        fi
+      fi
+      
+      # Check complexity (if metrics available)
+      if [ -f "metrics/complexity.json" ]; then
+        MAX_COMPLEXITY=$(cat metrics/complexity.json | jq '.maxComplexity')
+        echo "Max Complexity: $MAX_COMPLEXITY (threshold: $COMPLEXITY_THRESHOLD)"
+        if [ "$MAX_COMPLEXITY" -gt "$COMPLEXITY_THRESHOLD" ]; then
+          echo "FAILED: Complexity above threshold"
+          exit 1
+        fi
+      fi
+      
+      echo "All quality gates passed!"
+  allow_failure: false
+
+# Enforce branch protection rules
+.branch-protection-check:
+  stage: $[[ inputs.stage ]]
+  script:
+    - |
+      if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
+        # Ensure MR was used
+        if [ -z "$CI_MERGE_REQUEST_IID" ] && [ "$CI_PIPELINE_SOURCE" != "merge_request_event" ]; then
+          echo "Direct commits to $CI_DEFAULT_BRANCH are not allowed"
+          exit 1
+        fi
+      fi
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# Code review requirements check
+.review-requirements:
+  stage: $[[ inputs.stage ]]
+  script:
+    - |
+      if [ -n "$CI_MERGE_REQUEST_IID" ]; then
+        APPROVALS=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_API_TOKEN" \
+          "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/approvals" \
+          | jq '.approved_by | length')
+        
+        REQUIRED_APPROVALS=1
+        if [ "$APPROVALS" -lt "$REQUIRED_APPROVALS" ]; then
+          echo "Insufficient approvals: $APPROVALS/$REQUIRED_APPROVALS"
+          exit 1
+        fi
+        echo "Approval requirements met: $APPROVALS approvals"
+      fi
+  rules:
+    - if: $CI_MERGE_REQUEST_IID

@@ -6,7 +6,7 @@ This document maintains 3 recommended AWS infrastructure patterns for the Federa
 
 ## Pattern 1: Serverless Event-Driven Architecture
 
-**Status**: ✅ Recommended (Primary Pattern)
+**Status**: Recommended (Primary Pattern)
 
 ### Description
 A fully serverless architecture using AWS Lambda, EventBridge, and DynamoDB. Events flow through a central event bus, triggering appropriate handlers. Ideal for variable workloads and cost optimization.
@@ -84,18 +84,18 @@ resource "aws_dynamodb_table" "errors" {
 - Microservices with clear boundaries
 
 ### Trade-offs
-- ✅ Pay-per-use pricing
-- ✅ Auto-scaling built-in
-- ✅ No server management
-- ⚠️ Cold start latency
-- ⚠️ 15-minute execution limit
-- ⚠️ Vendor lock-in
+- Pay-per-use pricing
+- Auto-scaling built-in
+- No server management
+- Cold start latency (trade-off)
+- 15-minute execution limit (trade-off)
+- Vendor lock-in (trade-off)
 
 ---
 
 ## Pattern 2: Container-Based with ECS Fargate
 
-**Status**: ✅ Recommended (For Sustained Workloads)
+**Status**: Recommended (For Sustained Workloads)
 
 ### Description
 Containerized services running on ECS Fargate with Application Load Balancer. Provides more control than Lambda while avoiding EC2 management. Good for services with consistent traffic.
@@ -146,18 +146,18 @@ Containerized services running on ECS Fargate with Application Load Balancer. Pr
 - Need for more control than Lambda provides
 
 ### Trade-offs
-- ✅ No cold starts
-- ✅ More control over runtime
-- ✅ Better for long-running tasks
-- ⚠️ Higher baseline cost
-- ⚠️ More operational overhead
-- ⚠️ Manual scaling configuration
+- No cold starts
+- More control over runtime
+- Better for long-running tasks
+- Higher baseline cost (trade-off)
+- More operational overhead (trade-off)
+- Manual scaling configuration (trade-off)
 
 ---
 
 ## Pattern 3: Hybrid Edge Architecture with CloudFront
 
-**Status**: ✅ Recommended (For Global Distribution)
+**Status**: Recommended (For Global Distribution)
 
 ### Description
 A hybrid architecture combining CloudFront edge locations with Lambda@Edge for low-latency global access. Static assets served from edge, dynamic content from regional origins.
@@ -223,12 +223,12 @@ exports.handler = async (event) => {
 - Cost optimization for high-traffic static content
 
 ### Trade-offs
-- ✅ Sub-100ms latency globally
-- ✅ Reduced origin load
-- ✅ Built-in DDoS protection
-- ⚠️ Lambda@Edge limitations (size, runtime)
-- ⚠️ Cache invalidation complexity
-- ⚠️ Debugging distributed systems
+- Sub-100ms latency globally
+- Reduced origin load
+- Built-in DDoS protection
+- Lambda@Edge limitations (trade-off)
+- Cache invalidation complexity (trade-off)
+- Debugging distributed systems (trade-off)
 
 ---
 

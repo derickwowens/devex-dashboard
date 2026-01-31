@@ -1,193 +1,222 @@
-# Federated DevEx Platform
+# Ecosystem Developer Platform
 
-A demonstration project showcasing modern developer experience patterns including fluent facade APIs, centralized error handling, and AI-forward architecture.
+> **One platform. One API. Zero friction.**
 
-## 🎯 Project Vision
+A unified developer platform that encapsulates everything an engineer needs — authentication, error handling, telemetry, pipelines, and more — all accessible through a single, fluent API.
 
-This project demonstrates how to build a **federated developer experience platform** that:
+## Philosophy
 
-1. **Shields specialized engineers** (game devs, actuaries, etc.) from DevOps complexity
-2. **Provides a fluent facade** — a thin orchestration layer for consistent API consumption
-3. **Centralizes cross-cutting concerns** — error handling, UI configuration, telemetry
-4. **Enables AI agent compatibility** — minimal boilerplate, discoverable APIs
-5. **Implements version discipline** — cascading version updates across the SDK ecosystem
+The Ecosystem reduces friction between engineers and their tools. No more context-switching between different libraries. No more boilerplate. No more "how do I set this up?" questions.
 
-## 📁 Project Structure
+| Problem | Ecosystem Solution |
+|---------|-------------------|
+| 5 different auth libraries | `sdk.auth()` |
+| Custom error handling per team | `sdk.errors()` with instant triage |
+| Scattered telemetry configs | `sdk.telemetry()` |
+| Manual pipeline scripts | `sdk.pipelines()` |
+
+## Project Structure
 
 ```
-federated-devex-platform/
-├── packages/
-│   ├── core/              # Parent SDK with plugin system
-│   ├── error-handling/    # Centralized error capture and reporting
-│   ├── ui-config/         # UI component configuration registry
-│   ├── telemetry/         # Metrics, tracing, and observability
-│   └── facade/            # Fluent facade — the "thin layer"
+ecosystem-devex-platform/
 ├── apps/
-│   └── dashboard/         # DevEx dashboard UI (React + Vite)
-├── docs/
-│   ├── architecture-patterns.md    # 3 recommended code patterns
-│   └── infrastructure-patterns.md  # 3 recommended AWS patterns
-├── copilot-instructions.md         # AI agent guidance
-└── README.md
+│   ├── dashboard/           # Ecosystem Dashboard (React + Vite + Tailwind)
+│   └── chat-api/            # AI Chatbot API (Anthropic + MCP)
+├── packages/
+│   ├── core/                # Parent SDK with plugin system
+│   ├── auth/                # Microsoft Entra authentication with OBO flow
+│   ├── error-handling/      # Centralized error capture with structured logging
+│   ├── telemetry/           # Metrics, tracing, and observability
+│   ├── ui-config/           # UI component configuration registry
+│   ├── facade/              # Fluent facade API (main entry point)
+│   └── mcp-github/          # MCP server for GitHub integration
+├── docs/                    # MkDocs documentation site
+│   ├── getting-started/     # Quick start and installation guides
+│   ├── sdk/                 # SDK reference documentation
+│   ├── standards/           # Coding and logging standards
+│   ├── architecture/        # Architecture patterns and ADRs
+│   └── api/                 # API reference
+├── scripts/
+│   ├── env.sh               # Environment management (start/stop/restart)
+│   ├── build.sh             # Build script
+│   └── docs.sh              # Documentation server
+├── mkdocs.yml               # MkDocs configuration
+└── copilot-instructions.md  # AI agent guidance
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
 - Node.js 18+
-- npm 9+
+- Python 3.9+ (for MkDocs documentation)
 
 ### Installation
 
 ```bash
-# Clone and navigate to project
-cd federated-devex-platform
-
 # Install dependencies
 npm install
 
-# Start the dashboard
-npm run dev
+# Create Python virtual environment for docs
+python3 -m venv .venv
+source .venv/bin/activate
+pip install mkdocs mkdocs-material pymdown-extensions
 ```
 
-The dashboard will be available at `http://localhost:3000`
+### Start Development Environment
 
-## 💡 Core Concepts
+```bash
+# Start all services (dashboard + docs)
+./scripts/env.sh start
 
-### Fluent Facade Pattern
+# Or start individually
+./scripts/env.sh start --service dashboard  # Port 3000
+./scripts/env.sh start --service docs       # Port 8000
+```
 
-The SDK provides a chainable, discoverable API that abstracts complexity:
+**Services:**
+- Dashboard: http://localhost:3000
+- Documentation: http://localhost:8000
+
+## Dashboard Features
+
+The Ecosystem Dashboard provides:
+
+| Tab | Description |
+|-----|-------------|
+| **Ecosystem Home** | Overview with quick links and API reference |
+| **My Projects** | Project metadata, dependencies, and technology analysis |
+| **CI/CD Pipelines** | GitHub Actions pipeline monitoring with filters |
+| **Error Triage** | Centralized error tracking with structured logging |
+| **Knowledge Base** | MkDocs documentation with search |
+| **Team Directory** | Contact search and organizational lookup |
+| **AI Code Review** | AI-powered code review suggestions |
+| **API Explorer** | Interactive SDK playground |
+
+## Fluent Facade API
+
+Single import, everything you need:
 
 ```typescript
 import { sdk } from '@federated/facade';
 
-// Error handling
+// Authentication (Microsoft Entra OBO)
+await sdk.auth().loginWithCode(code).execute();
+if (await sdk.auth().hasPermission('pipelines', 'create')) { ... }
+
+// Error Handling with Structured Logging
 sdk.errors()
   .capture(err)
-  .withContext({ userId: '123' })
-  .inComponent('PlayerService')
-  .withSeverity('error')
+  .withErrorId('AUTH-00142')
+  .withOwnership({
+    team: 'Platform Auth',
+    email: 'auth-team@company.com',
+    incidentGroup: '#auth-incidents'
+  })
   .send();
-
-// UI configuration
-const buttonConfig = sdk.ui()
-  .component('button')
-  .variant('primary')
-  .size('lg')
-  .getConfig();
 
 // Telemetry
-sdk.telemetry()
-  .metric('api.latency')
-  .value(150)
-  .unit('ms')
-  .send();
+sdk.telemetry().metric('api.latency').value(150).unit('ms').send();
 
 // Pipelines
-const running = sdk.pipelines()
-  .list()
-  .status('running')
-  .execute();
-
-// Contacts
-const engineers = sdk.contacts()
-  .search('engineer')
-  .inOrg('Engineering')
-  .execute();
+await sdk.pipelines().trigger('my-project', 'main').execute();
 ```
 
-### Centralized Error Handling
+## Structured Logging Standard
 
-One API to rule them all — normalized, ecosystem-wide error capture:
+All errors follow a standardized format for instant triage:
 
-```typescript
-try {
-  await riskyOperation();
-} catch (err) {
-  sdk.errors()
-    .capture(err)
-    .withContext({ operation: 'riskyOperation', userId })
-    .withSeverity('error')
-    .send();
-}
+```
+[ErrorCode]: [ErrorString]: [TeamName]: [TeamEmail]: [IncidentGroup]
 ```
 
-### Version Discipline
+**Example:**
+```
+AUTH-00142: Token refresh failed: Platform Auth: auth-team@company.com: #auth-incidents
+```
+
+This eliminates research time — every error contains routing information.
+
+## SDK Packages
+
+| Package | Description | API |
+|---------|-------------|-----|
+| `@federated/facade` | Main entry point | `sdk.*()` |
+| `@federated/auth` | Microsoft Entra authentication | `sdk.auth()` |
+| `@federated/error-handling` | Centralized error capture | `sdk.errors()` |
+| `@federated/telemetry` | Metrics and tracing | `sdk.telemetry()` |
+| `@federated/ui-config` | UI component configuration | `sdk.ui()` |
+
+## Documentation
+
+Documentation is built with MkDocs and served locally:
+
+```bash
+# Start documentation server
+./scripts/docs.sh serve
+
+# Build static site
+./scripts/docs.sh build
+```
+
+**Documentation sections:**
+- [Getting Started](docs/getting-started/quick-start.md)
+- [SDK Reference](docs/sdk/overview.md)
+- [Structured Logging Standard](docs/standards/structured-logging.md)
+- [Architecture Patterns](docs/architecture/patterns.md)
+- [API Reference](docs/api/facade.md)
+
+## Environment Management
+
+```bash
+# Start all services
+./scripts/env.sh start
+
+# Stop all services
+./scripts/env.sh stop
+
+# Restart all services
+./scripts/env.sh restart
+
+# Check status
+./scripts/env.sh status
+
+# Start specific service
+./scripts/env.sh start --service dashboard
+./scripts/env.sh start --service docs
+```
+
+## AI Chatbot Integration
+
+The dashboard includes an AI chatbot powered by:
+- **Anthropic Claude** for natural language understanding
+- **MCP (Model Context Protocol)** for GitHub integration
+
+The chatbot can answer questions about pipelines, errors, and help navigate the ecosystem.
+
+## Development Guidelines
+
+See [copilot-instructions.md](./copilot-instructions.md) for:
+- Ecosystem philosophy
+- Code style requirements (no emojis, strict TypeScript)
+- Error handling patterns
+- Documentation standards
+- Architecture patterns
+
+## Version Discipline
 
 Child SDK version bumps cascade to the parent SDK:
 
-- Child **major** bump → Parent **minor** bump
-- Child **minor** bump → Parent **patch** bump
-- Child **patch** bump → Parent **patch** bump
+| Child Change | Parent Change |
+|--------------|---------------|
+| Major bump | Minor bump |
+| Minor bump | Patch bump |
+| Patch bump | Patch bump |
 
-This ensures consumers always know when ecosystem changes occur.
-
-## 🖥️ Dashboard Features
-
-The DevEx Dashboard provides:
-
-- **Pipeline Monitoring** — View and manage CI/CD pipelines
-- **Error Tracking** — Centralized error monitoring with context
-- **Contact Directory** — Address book for organizational contacts
-- **Code Review** — AI-powered code review suggestions (RAG paradigm)
-- **SDK Playground** — Interactive examples of the fluent facade API
-
-## 📚 Documentation
-
-- [`copilot-instructions.md`](./copilot-instructions.md) — AI agent guidance and coding standards
-- [`docs/architecture-patterns.md`](./docs/architecture-patterns.md) — Recommended code patterns
-- [`docs/infrastructure-patterns.md`](./docs/infrastructure-patterns.md) — Recommended AWS patterns
-
-## 🏗️ Architecture Highlights
-
-### For PlayStation / Game Development
-
-- **Game Engine Integration** — Expose systems in a simple, federated way
-- **Asset Pipeline Management** — Track and manage build pipelines
-- **Telemetry for Performance** — Track frame times, memory usage, etc.
-- **Error Handling for Crashes** — Centralized crash reporting with context
-
-### For Vantaca / Property Management
-
-- **HOA Workflow Automation** — Expose complex workflows through simple APIs
-- **Billing Integration** — Centralized error handling for payment flows
-- **Contact Management** — Address book for property managers and vendors
-- **Audit Trail** — Telemetry for compliance and debugging
-
-## 🤖 AI-Forward Design
-
-The SDK is designed for AI agent consumption:
-
-1. **Minimal boilerplate** — Less code for agents to generate
-2. **Discoverable APIs** — Fluent interface enables autocomplete
-3. **Rich TypeScript types** — Agents can understand the API surface
-4. **Deterministic functions** — Predictable inputs and outputs
-
-## 🛠️ Development
-
-### Building Packages
-
-```bash
-npm run build
-```
-
-### Running Tests
-
-```bash
-npm run test
-```
-
-### Linting
-
-```bash
-npm run lint
-```
-
-## 📄 License
+## License
 
 MIT
 
 ---
 
-*Built as an interview demonstration project showcasing modern DevEx patterns.*
+**Ecosystem Developer Platform** — Reducing friction, accelerating delivery.

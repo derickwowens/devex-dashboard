@@ -155,4 +155,73 @@ export async function fetchAllCommits(repos: GitHubRepo[], perRepo: number = 5):
   return allCommits
 }
 
+interface GitHubFileContent {
+  type: string
+  encoding: string
+  content: string
+  name: string
+  path: string
+}
+
+export interface PackageJson {
+  name?: string
+  version?: string
+  dependencies?: Record<string, string>
+  devDependencies?: Record<string, string>
+  scripts?: Record<string, string>
+}
+
+export async function fetchRepoPackageJson(owner: string, repo: string): Promise<PackageJson | null> {
+  try {
+    const data = await fetchGitHub<GitHubFileContent>(`/repos/${owner}/${repo}/contents/package.json`)
+    if (data.encoding === 'base64' && data.content) {
+      const decoded = atob(data.content.replace(/\n/g, ''))
+      return JSON.parse(decoded)
+    }
+    return null
+  } catch (error) {
+    if (error instanceof GitHubAPIError && error.status === 404) {
+      return null
+    }
+    console.error(`Failed to fetch package.json for ${owner}/${repo}:`, error)
+    return null
+  }
+}
+
+export async function fetchRepoEnvExample(owner: string, repo: string): Promise<string[] | null> {
+  try {
+    const data = await fetchGitHub<GitHubFileContent>(`/repos/${owner}/${repo}/contents/.env.example`)
+    if (data.encoding === 'base64' && data.content) {
+      const decoded = atob(data.content.replace(/\n/g, ''))
+      // Extract environment variable names (lines that start with a variable name)
+      const envVars = decoded
+        .split('\n')
+        .filter(line => line.trim() && !line.startsWith('#'))
+        .map(line => line.split('=')[0].trim())
+        .filter(Boolean)
+      return envVars
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+export async function fetchAllPackageJsons(repos: GitHubRepo[]): Promise<Map<string, PackageJson>> {
+  const packageJsons = new Map<string, PackageJson>()
+  
+  for (const repo of repos) {
+    try {
+      const pkg = await fetchRepoPackageJson(repo.owner.login, repo.name)
+      if (pkg) {
+        packageJsons.set(repo.name, pkg)
+      }
+    } catch (error) {
+      console.error(`Failed to fetch package.json for ${repo.full_name}:`, error)
+    }
+  }
+  
+  return packageJsons
+}
+
 export type { GitHubRepo, GitHubCommit, GitHubWorkflowRun }

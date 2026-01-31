@@ -12,13 +12,26 @@ import {
   Filter,
   Search,
   ExternalLink,
-  AlertCircle
+  AlertCircle,
+  Shield,
+  BarChart3,
+  Bug,
+  Zap
 } from 'lucide-react'
 import { cn, formatRelativeTime } from '../lib/utils'
 import { useGitHubRepos, useGitHubCommits } from '../hooks/useGitHub'
 
 type ReviewStatus = 'pending' | 'reviewed' | 'approved' | 'changes_requested'
 type SuggestionType = 'improvement' | 'warning' | 'info' | 'security'
+
+interface AnalysisMetrics {
+  lintErrors: number
+  lintWarnings: number
+  coverage: number
+  complexity: number
+  securityIssues: number
+  duplications: number
+}
 
 interface Suggestion {
   id: string
@@ -42,6 +55,7 @@ interface Commit {
   suggestions: Suggestion[]
   repo: string
   url: string
+  metrics: AnalysisMetrics
 }
 
 const statusConfig: Record<ReviewStatus, { label: string; color: string; bg: string }> = {
@@ -131,6 +145,16 @@ export function CodeReview() {
       const additions = (shaInt % 500) + 10
       const deletions = (shaInt % 200) + 5
       
+      // Generate mock analysis metrics based on SHA for consistency
+      const metrics: AnalysisMetrics = {
+        lintErrors: shaInt % 5,
+        lintWarnings: (shaInt % 12) + 2,
+        coverage: 60 + (shaInt % 35),
+        complexity: 5 + (shaInt % 20),
+        securityIssues: shaInt % 3,
+        duplications: shaInt % 8,
+      }
+      
       return {
         id: c.sha,
         sha: c.sha.substring(0, 7),
@@ -143,7 +167,8 @@ export function CodeReview() {
         deletions,
         suggestions: generateSuggestions(c.sha),
         repo: c.repo,
-        url: c.html_url
+        url: c.html_url,
+        metrics,
       }
     })
   }, [gitHubCommits])
@@ -332,6 +357,85 @@ export function CodeReview() {
                   <div className="text-red-600">-{selectedCommit.deletions}</div>
                   <div className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-medium">
                     {selectedCommit.repo}
+                  </div>
+                </div>
+              </div>
+
+              {/* Analysis Metrics */}
+              <div className="p-5 border-b border-gray-200">
+                <h3 className="font-semibold text-gray-900 mb-4">Code Analysis Metrics</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Bug className="w-4 h-4 text-red-500" />
+                      <span className="text-sm text-gray-600">Lint Errors</span>
+                    </div>
+                    <div className={cn(
+                      "text-2xl font-bold",
+                      selectedCommit.metrics.lintErrors > 0 ? "text-red-600" : "text-green-600"
+                    )}>
+                      {selectedCommit.metrics.lintErrors}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                      <span className="text-sm text-gray-600">Lint Warnings</span>
+                    </div>
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {selectedCommit.metrics.lintWarnings}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <BarChart3 className="w-4 h-4 text-blue-500" />
+                      <span className="text-sm text-gray-600">Coverage</span>
+                    </div>
+                    <div className={cn(
+                      "text-2xl font-bold",
+                      selectedCommit.metrics.coverage >= 80 ? "text-green-600" :
+                      selectedCommit.metrics.coverage >= 60 ? "text-yellow-600" : "text-red-600"
+                    )}>
+                      {selectedCommit.metrics.coverage}%
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Zap className="w-4 h-4 text-purple-500" />
+                      <span className="text-sm text-gray-600">Complexity</span>
+                    </div>
+                    <div className={cn(
+                      "text-2xl font-bold",
+                      selectedCommit.metrics.complexity <= 10 ? "text-green-600" :
+                      selectedCommit.metrics.complexity <= 20 ? "text-yellow-600" : "text-red-600"
+                    )}>
+                      {selectedCommit.metrics.complexity}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Shield className="w-4 h-4 text-red-500" />
+                      <span className="text-sm text-gray-600">Security Issues</span>
+                    </div>
+                    <div className={cn(
+                      "text-2xl font-bold",
+                      selectedCommit.metrics.securityIssues > 0 ? "text-red-600" : "text-green-600"
+                    )}>
+                      {selectedCommit.metrics.securityIssues}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <FileCode className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">Duplications</span>
+                    </div>
+                    <div className={cn(
+                      "text-2xl font-bold",
+                      selectedCommit.metrics.duplications <= 3 ? "text-green-600" :
+                      selectedCommit.metrics.duplications <= 6 ? "text-yellow-600" : "text-red-600"
+                    )}>
+                      {selectedCommit.metrics.duplications}%
+                    </div>
                   </div>
                 </div>
               </div>

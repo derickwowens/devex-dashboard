@@ -99,6 +99,17 @@ scripts/
 
 ## Code Style Requirements
 
+### No Emojis
+
+**Never use emojis in code, documentation, comments, or any project files.** This includes:
+- Source code and comments
+- Documentation (markdown files)
+- Commit messages
+- Log messages
+- UI text
+
+Use descriptive text instead of emoji symbols.
+
 ### TypeScript
 - Strict mode enabled (`"strict": true`)
 - Explicit return types on all public functions

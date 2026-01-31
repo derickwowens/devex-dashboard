@@ -17,15 +17,20 @@
 #   clean       Clean all build artifacts and node_modules
 #
 # Options:
-#   --service <name>    Target a specific service (dashboard, api, etc.)
+#   --service <name>    Target a specific service (dashboard, docs)
 #   --env <name>        Environment (development, staging, production)
 #   --port <number>     Override default port
 #   --detach            Run in background (detached mode)
 #   --verbose           Verbose output
 #
+# Services:
+#   dashboard           Main Ecosystem dashboard (port 3000)
+#   docs                MkDocs documentation site (port 8000)
+#
 # Examples:
 #   ./scripts/env.sh start
 #   ./scripts/env.sh start --service dashboard --port 3001
+#   ./scripts/env.sh start --service docs
 #   ./scripts/env.sh restart --env staging
 #   ./scripts/env.sh logs --service dashboard
 #
@@ -57,6 +62,7 @@ VERBOSE=false
 # Service definitions
 declare -A SERVICES
 SERVICES[dashboard]="$APPS_DIR/dashboard:3000:npm run dev"
+SERVICES[docs]="$ROOT_DIR:8000:source .venv/bin/activate && mkdocs serve -a 0.0.0.0:8000"
 
 # Parse arguments
 COMMAND="${1:-}"

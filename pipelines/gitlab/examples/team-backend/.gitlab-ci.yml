@@ -1,0 +1,252 @@
+# =============================================================================
+# Backend Team - GitLab CI/CD Pipeline
+# =============================================================================
+# Extends platform components with API/microservices-specific jobs
+# =============================================================================
+
+include:
+  # Platform-wide components
+  - component: $CI_SERVER_FQDN/devex/components/security-scanning@1.0.0
+    inputs:
+      stage: security
+      snyk_org: "backend-team"
+      fail_on_issues: true
+  - component: $CI_SERVER_FQDN/devex/components/quality-gates@1.0.0
+    inputs:
+      coverage_threshold: 85
+      complexity_threshold: 10
+  - component: $CI_SERVER_FQDN/devex/components/notifications@1.0.0
+    inputs:
+      slack_channel: "#backend-builds"
+
+variables:
+  POSTGRES_VERSION: "15"
+  REDIS_VERSION: "7"
+  NODE_ENV: "test"
+
+stages:
+  - prepare
+  - build
+  - test
+  - security
+  - quality
+  - package
+  - deploy
+  - verify
+
+# =============================================================================
+# MICROSERVICES BUILD - Parallel across services
+# =============================================================================
+
+build:services:
+  stage: build
+  parallel:
+    matrix:
+      - SERVICE: [api-gateway, user-service, payment-service, notification-service]
+  script:
+    - cd services/$SERVICE
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - services/$SERVICE/dist/
+    expire_in: 1 day
+
+# =============================================================================
+# DATABASE MIGRATIONS - Sequential per environment
+# =============================================================================
+
+migrate:
+  stage: prepare
+  parallel:
+    matrix:
+      - DB_TARGET: [users, payments, notifications]
+  services:
+    - postgres:$POSTGRES_VERSION
+  variables:
+    DATABASE_URL: "postgresql://test:test@postgres:5432/$DB_TARGET"
+  script:
+    - npm run db:migrate -- --database=$DB_TARGET
+  rules:
+    - changes:
+        - "services/**/migrations/**"
+        - "prisma/**"
+
+# =============================================================================
+# API TESTING - Contract & Integration
+# =============================================================================
+
+test:unit:services:
+  stage: test
+  parallel:
+    matrix:
+      - SERVICE: [api-gateway, user-service, payment-service, notification-service]
+        TEST_SHARD: [1, 2]
+  script:
+    - cd services/$SERVICE
+    - npm test -- --shard=$TEST_SHARD/2 --coverage
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  artifacts:
+    reports:
+      junit: services/$SERVICE/junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: services/$SERVICE/coverage/cobertura-coverage.xml
+
+test:contract:
+  stage: test
+  needs: ["build:services"]
+  image: pactfoundation/pact-cli:latest
+  parallel:
+    matrix:
+      - PROVIDER: [user-service, payment-service]
+        CONSUMER: [api-gateway, mobile-bff]
+  script:
+    - |
+      echo "Verifying contract: $CONSUMER -> $PROVIDER"
+      pact-broker can-i-deploy \
+        --pacticipant $CONSUMER \
+        --version $CI_COMMIT_SHA \
+        --to-environment $CI_ENVIRONMENT_NAME \
+        --broker-base-url $PACT_BROKER_URL
+  allow_failure: true
+
+test:integration:
+  stage: test
+  needs: ["build:services"]
+  services:
+    - name: postgres:$POSTGRES_VERSION
+      alias: db
+    - name: redis:$REDIS_VERSION
+      alias: cache
+    - name: localstack/localstack:latest
+      alias: aws
+  variables:
+    DATABASE_URL: "postgresql://test:test@db:5432/test"
+    REDIS_URL: "redis://cache:6379"
+    AWS_ENDPOINT: "http://aws:4566"
+  parallel:
+    matrix:
+      - TEST_SUITE: [auth, payments, notifications, webhooks]
+  script:
+    - npm run test:integration -- --suite=$TEST_SUITE
+
+test:load:
+  stage: test
+  needs: ["build:services"]
+  image: grafana/k6:latest
+  parallel:
+    matrix:
+      - SCENARIO: [smoke, load, stress]
+        ENDPOINT: [users, payments]
+  script:
+    - |
+      k6 run \
+        --out influxdb=$INFLUXDB_URL \
+        --tag scenario=$SCENARIO \
+        --tag endpoint=$ENDPOINT \
+        -e API_URL=$STAGING_API_URL \
+        tests/load/${ENDPOINT}_${SCENARIO}.js
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+
+# =============================================================================
+# SECURITY - API-specific scans
+# =============================================================================
+
+security:api:
+  stage: security
+  parallel:
+    matrix:
+      - SCAN_TYPE: [owasp-zap, api-fuzzing]
+  script:
+    - |
+      case "$SCAN_TYPE" in
+        owasp-zap)
+          docker run --rm -v $(pwd):/zap/wrk owasp/zap2docker-stable \
+            zap-api-scan.py -t $API_SPEC_URL -f openapi -r zap-report.html
+          ;;
+        api-fuzzing)
+          # Run API fuzzing against OpenAPI spec
+          npm run test:fuzz -- --spec=openapi.yaml
+          ;;
+      esac
+  artifacts:
+    paths:
+      - zap-report.html
+      - fuzz-results/
+    when: always
+
+# =============================================================================
+# CONTAINER BUILDS - Multi-service parallel
+# =============================================================================
+
+package:containers:
+  stage: package
+  needs: ["build:services", "test:unit:services", "security:snyk"]
+  parallel:
+    matrix:
+      - SERVICE: [api-gateway, user-service, payment-service, notification-service]
+        ARCH: [amd64, arm64]
+  script:
+    - |
+      docker buildx build \
+        --platform linux/$ARCH \
+        --tag $CI_REGISTRY_IMAGE/$SERVICE:$CI_COMMIT_SHA-$ARCH \
+        --push \
+        --file services/$SERVICE/Dockerfile \
+        services/$SERVICE
+
+# =============================================================================
+# KUBERNETES DEPLOYMENT - Rolling updates
+# =============================================================================
+
+deploy:services:
+  stage: deploy
+  needs: ["package:containers"]
+  image: bitnami/kubectl:latest
+  parallel:
+    matrix:
+      - SERVICE: [api-gateway, user-service, payment-service, notification-service]
+        ENVIRONMENT: [dev, staging]
+  environment:
+    name: $ENVIRONMENT/$SERVICE
+    url: https://$SERVICE.$ENVIRONMENT.api.example.com
+  script:
+    - |
+      kubectl set image deployment/$SERVICE \
+        $SERVICE=$CI_REGISTRY_IMAGE/$SERVICE:$CI_COMMIT_SHA \
+        -n backend-$ENVIRONMENT
+      kubectl rollout status deployment/$SERVICE -n backend-$ENVIRONMENT --timeout=5m
+  rules:
+    - if: $ENVIRONMENT == "staging" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $ENVIRONMENT == "dev"
+
+deploy:canary:
+  stage: deploy
+  needs: ["deploy:services"]
+  parallel:
+    matrix:
+      - SERVICE: [api-gateway, user-service]
+  script:
+    - |
+      # Deploy canary with 10% traffic
+      kubectl apply -f k8s/$SERVICE/canary.yaml -n backend-prod
+      kubectl set image deployment/$SERVICE-canary \
+        $SERVICE=$CI_REGISTRY_IMAGE/$SERVICE:$CI_COMMIT_SHA \
+        -n backend-prod
+      
+      # Wait for metrics validation
+      sleep 300
+      
+      # Check error rate
+      ERROR_RATE=$(curl -s "$PROMETHEUS_URL/api/v1/query?query=rate(http_requests_total{service='$SERVICE',status=~'5..'}[5m])" | jq '.data.result[0].value[1]')
+      if (( $(echo "$ERROR_RATE > 0.01" | bc -l) )); then
+        echo "Canary failed - rolling back"
+        kubectl rollout undo deployment/$SERVICE-canary -n backend-prod
+        exit 1
+      fi
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: manual

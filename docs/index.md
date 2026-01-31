@@ -12,7 +12,7 @@ The Ecosystem encapsulates everything an engineer needs: authentication, error h
 
 Traditional developer platforms are fragmented:
 
-| ❌ Fragmented World | ✅ The Ecosystem |
+| Fragmented World | The Ecosystem |
 |---------------------|------------------|
 | 5 different auth libraries | `sdk.auth()` |
 | Custom error handling per team | `sdk.errors()` with instant triage |
@@ -23,11 +23,11 @@ Traditional developer platforms are fragmented:
 
 ### Core Principles
 
-- **🎯 Reduce Friction** — Every API call should feel natural and require minimal setup
-- **🚀 Fast Onboarding** — New engineers productive in under 5 minutes
-- **🔗 Centralized Concerns** — Auth, errors, telemetry handled once, used everywhere
-- **🤖 AI-Forward Design** — APIs designed for both humans and AI agents
-- **📚 Living Documentation** — Docs are code, auto-updated with every change
+- **Reduce Friction** — Every API call should feel natural and require minimal setup
+- **Fast Onboarding** — New engineers productive in under 5 minutes
+- **Centralized Concerns** — Auth, errors, telemetry handled once, used everywhere
+- **AI-Forward Design** — APIs designed for both humans and AI agents
+- **Living Documentation** — Docs are code, auto-updated with every change
 
 ## Quick Start
 

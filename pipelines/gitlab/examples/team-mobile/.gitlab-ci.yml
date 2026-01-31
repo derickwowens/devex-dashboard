@@ -1,0 +1,162 @@
+# =============================================================================
+# Mobile Team - GitLab CI/CD Pipeline
+# =============================================================================
+# Extends the platform components with mobile-specific jobs
+# =============================================================================
+
+include:
+  # Platform-wide components
+  - component: $CI_SERVER_FQDN/devex/components/security-scanning@1.0.0
+    inputs:
+      stage: security
+      snyk_org: "mobile-team"
+      severity_threshold: "medium"
+  - component: $CI_SERVER_FQDN/devex/components/quality-gates@1.0.0
+    inputs:
+      coverage_threshold: 75
+  - component: $CI_SERVER_FQDN/devex/components/notifications@1.0.0
+    inputs:
+      slack_channel: "#mobile-builds"
+
+variables:
+  ANDROID_SDK_ROOT: "/opt/android-sdk"
+  XCODE_VERSION: "15.2"
+  FLUTTER_VERSION: "3.16.0"
+
+stages:
+  - prepare
+  - build
+  - test
+  - security
+  - quality
+  - package
+  - deploy
+  - verify
+
+# =============================================================================
+# MOBILE-SPECIFIC BUILDS
+# =============================================================================
+
+build:mobile:
+  stage: build
+  parallel:
+    matrix:
+      - PLATFORM: [android, ios]
+        BUILD_TYPE: [debug, release]
+  tags:
+    - $PLATFORM
+  script:
+    - |
+      case "$PLATFORM" in
+        android)
+          ./gradlew assemble${BUILD_TYPE^}
+          ;;
+        ios)
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration ${BUILD_TYPE^} \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/App.xcarchive \
+            archive
+          ;;
+      esac
+  artifacts:
+    paths:
+      - build/
+      - app/build/outputs/
+    expire_in: 1 day
+
+# =============================================================================
+# MOBILE TESTING
+# =============================================================================
+
+test:unit:mobile:
+  stage: test
+  parallel:
+    matrix:
+      - PLATFORM: [android, ios]
+  script:
+    - |
+      case "$PLATFORM" in
+        android)
+          ./gradlew testDebugUnitTest
+          ;;
+        ios)
+          xcodebuild test \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -destination 'platform=iOS Simulator,name=iPhone 15'
+          ;;
+      esac
+  artifacts:
+    reports:
+      junit: "**/TEST-*.xml"
+
+test:instrumented:
+  stage: test
+  needs: ["build:mobile"]
+  parallel:
+    matrix:
+      - DEVICE_TYPE: [phone, tablet]
+        OS_VERSION: ["14", "15"]
+  tags:
+    - android-emulator
+  script:
+    - |
+      # Start emulator with matrix configuration
+      DEVICE=$([[ "$DEVICE_TYPE" == "phone" ]] && echo "pixel_6" || echo "pixel_tablet")
+      emulator -avd ${DEVICE}_api_${OS_VERSION} -no-window &
+      adb wait-for-device
+      ./gradlew connectedDebugAndroidTest
+  artifacts:
+    paths:
+      - app/build/reports/androidTests/
+
+# =============================================================================
+# MOBILE SECURITY SCANNING
+# =============================================================================
+
+security:mobile:
+  extends: .snyk-dependency-scan
+  parallel:
+    matrix:
+      - MANIFEST: [android/app/build.gradle, ios/Podfile]
+  script:
+    - snyk test --file=$MANIFEST --org=mobile-team
+
+# =============================================================================
+# APP STORE DEPLOYMENT
+# =============================================================================
+
+deploy:testflight:
+  stage: deploy
+  needs: ["build:mobile", "test:unit:mobile", "security:mobile"]
+  tags:
+    - macos
+  script:
+    - |
+      xcodebuild -exportArchive \
+        -archivePath build/App.xcarchive \
+        -exportPath build/ipa \
+        -exportOptionsPlist ExportOptions.plist
+      xcrun altool --upload-app \
+        -f build/ipa/App.ipa \
+        -t ios \
+        --apiKey $APP_STORE_API_KEY \
+        --apiIssuer $APP_STORE_ISSUER_ID
+  rules:
+    - if: $CI_COMMIT_BRANCH == "release/*"
+    - if: $CI_COMMIT_TAG
+      when: manual
+
+deploy:play-store:
+  stage: deploy
+  needs: ["build:mobile", "test:unit:mobile", "security:mobile"]
+  image: ruby:3.2
+  script:
+    - gem install fastlane
+    - fastlane supply --aab app/build/outputs/bundle/release/app-release.aab --track internal
+  rules:
+    - if: $CI_COMMIT_BRANCH == "release/*"
+    - if: $CI_COMMIT_TAG
+      when: manual

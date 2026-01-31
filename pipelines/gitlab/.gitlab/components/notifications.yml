@@ -1,0 +1,145 @@
+# =============================================================================
+# Notifications Component
+# =============================================================================
+# Standardized notification templates for pipeline events
+# Supports Slack, Teams, and email notifications
+# =============================================================================
+
+spec:
+  inputs:
+    stage:
+      default: .post
+    slack_channel:
+      default: "#devex-builds"
+    notify_on_failure:
+      default: true
+    notify_on_success:
+      default: false
+
+---
+
+# Slack notification for pipeline success
+.notify-slack-success:
+  stage: $[[ inputs.stage ]]
+  image: curlimages/curl:latest
+  variables:
+    SLACK_CHANNEL: $[[ inputs.slack_channel ]]
+  script:
+    - |
+      curl -X POST "$SLACK_WEBHOOK_URL" \
+        -H "Content-Type: application/json" \
+        -d '{
+          "channel": "'"$SLACK_CHANNEL"'",
+          "attachments": [{
+            "color": "good",
+            "title": "Pipeline Succeeded",
+            "title_link": "'"$CI_PIPELINE_URL"'",
+            "fields": [
+              {"title": "Project", "value": "'"$CI_PROJECT_NAME"'", "short": true},
+              {"title": "Branch", "value": "'"$CI_COMMIT_REF_NAME"'", "short": true},
+              {"title": "Commit", "value": "'"${CI_COMMIT_SHA:0:8}"'", "short": true},
+              {"title": "Author", "value": "'"$CI_COMMIT_AUTHOR"'", "short": true}
+            ],
+            "footer": "GitLab CI/CD",
+            "ts": '"$(date +%s)"'
+          }]
+        }'
+  rules:
+    - if: $[[ inputs.notify_on_success ]] == "true"
+      when: on_success
+
+# Slack notification for pipeline failure
+.notify-slack-failure:
+  stage: $[[ inputs.stage ]]
+  image: curlimages/curl:latest
+  variables:
+    SLACK_CHANNEL: $[[ inputs.slack_channel ]]
+  script:
+    - |
+      curl -X POST "$SLACK_WEBHOOK_URL" \
+        -H "Content-Type: application/json" \
+        -d '{
+          "channel": "'"$SLACK_CHANNEL"'",
+          "attachments": [{
+            "color": "danger",
+            "title": "Pipeline Failed",
+            "title_link": "'"$CI_PIPELINE_URL"'",
+            "fields": [
+              {"title": "Project", "value": "'"$CI_PROJECT_NAME"'", "short": true},
+              {"title": "Branch", "value": "'"$CI_COMMIT_REF_NAME"'", "short": true},
+              {"title": "Commit", "value": "'"${CI_COMMIT_SHA:0:8}"'", "short": true},
+              {"title": "Author", "value": "'"$CI_COMMIT_AUTHOR"'", "short": true},
+              {"title": "Failed Job", "value": "'"$CI_JOB_NAME"'", "short": true}
+            ],
+            "footer": "GitLab CI/CD",
+            "ts": '"$(date +%s)"'
+          }]
+        }'
+  rules:
+    - if: $[[ inputs.notify_on_failure ]] == "true"
+      when: on_failure
+
+# Microsoft Teams notification
+.notify-teams:
+  stage: $[[ inputs.stage ]]
+  image: curlimages/curl:latest
+  script:
+    - |
+      STATUS_COLOR=$([[ "$CI_JOB_STATUS" == "success" ]] && echo "00FF00" || echo "FF0000")
+      curl -X POST "$TEAMS_WEBHOOK_URL" \
+        -H "Content-Type: application/json" \
+        -d '{
+          "@type": "MessageCard",
+          "@context": "http://schema.org/extensions",
+          "themeColor": "'"$STATUS_COLOR"'",
+          "summary": "Pipeline '"$CI_JOB_STATUS"' for '"$CI_PROJECT_NAME"'",
+          "sections": [{
+            "activityTitle": "Pipeline '"$CI_JOB_STATUS"'",
+            "facts": [
+              {"name": "Project", "value": "'"$CI_PROJECT_NAME"'"},
+              {"name": "Branch", "value": "'"$CI_COMMIT_REF_NAME"'"},
+              {"name": "Commit", "value": "'"${CI_COMMIT_SHA:0:8}"'"},
+              {"name": "Author", "value": "'"$CI_COMMIT_AUTHOR"'"}
+            ],
+            "markdown": true
+          }],
+          "potentialAction": [{
+            "@type": "OpenUri",
+            "name": "View Pipeline",
+            "targets": [{"os": "default", "uri": "'"$CI_PIPELINE_URL"'"}]
+          }]
+        }'
+  when: always
+
+# Security alert notification (for critical vulnerabilities)
+.notify-security-alert:
+  stage: $[[ inputs.stage ]]
+  image: curlimages/curl:latest
+  script:
+    - |
+      if [ -f "security-reports/snyk-deps.json" ]; then
+        CRITICAL=$(cat security-reports/snyk-deps.json | jq '[.vulnerabilities[] | select(.severity == "critical")] | length')
+        HIGH=$(cat security-reports/snyk-deps.json | jq '[.vulnerabilities[] | select(.severity == "high")] | length')
+        
+        if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+          curl -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "channel": "#security-alerts",
+              "attachments": [{
+                "color": "danger",
+                "title": "Security Vulnerabilities Detected",
+                "title_link": "'"$CI_PIPELINE_URL"'",
+                "text": "Critical: '"$CRITICAL"' | High: '"$HIGH"'",
+                "fields": [
+                  {"title": "Project", "value": "'"$CI_PROJECT_NAME"'", "short": true},
+                  {"title": "Branch", "value": "'"$CI_COMMIT_REF_NAME"'", "short": true}
+                ],
+                "footer": "Snyk Security Scan"
+              }]
+            }'
+        fi
+      fi
+  rules:
+    - exists:
+        - security-reports/snyk-deps.json

@@ -34,6 +34,7 @@ interface Document {
   type: DocumentType
   projectId?: string
   packageName?: string
+  teamName?: string
   version?: string
   tags: string[]
   updatedAt: Date
@@ -52,6 +53,7 @@ const demoDocuments: Document[] = [
     url: `${MKDOCS_BASE_URL}/sdk/authentication/`,
     type: 'guide',
     packageName: '@federated/auth',
+    teamName: 'Platform Auth',
     version: '1.0.0',
     tags: ['auth', 'entra', 'obo', 'security'],
     updatedAt: new Date(Date.now() - 86400000),
@@ -65,6 +67,7 @@ const demoDocuments: Document[] = [
     url: `${MKDOCS_BASE_URL}/sdk/error-handling/`,
     type: 'api-reference',
     packageName: '@federated/error-handling',
+    teamName: 'Platform Core',
     version: '1.0.0',
     tags: ['errors', 'api', 'reference'],
     updatedAt: new Date(),
@@ -78,6 +81,7 @@ const demoDocuments: Document[] = [
     url: `${MKDOCS_BASE_URL}/standards/structured-logging/`,
     type: 'guide',
     packageName: '@federated/error-handling',
+    teamName: 'Platform Core',
     version: '1.0.0',
     tags: ['errors', 'logging', 'standards', 'tickets', 'ownership'],
     updatedAt: new Date(),
@@ -87,10 +91,23 @@ const demoDocuments: Document[] = [
     id: 'doc-getting-started',
     name: 'getting-started',
     title: 'Getting Started',
-    description: 'Quick start guide to the Federated DevEx Platform',
+    description: 'Quick start guide to the Ecosystem Developer Platform',
     url: `${MKDOCS_BASE_URL}/getting-started/quick-start/`,
     type: 'tutorial',
+    teamName: 'Platform Core',
     tags: ['quickstart', 'tutorial', 'beginner'],
+    updatedAt: new Date(Date.now() - 86400000),
+    status: 'published',
+  },
+  {
+    id: 'doc-installation',
+    name: 'installation',
+    title: 'Installation Guide',
+    description: 'How to install the Ecosystem SDK and its packages',
+    url: `${MKDOCS_BASE_URL}/getting-started/installation/`,
+    type: 'tutorial',
+    teamName: 'Platform Core',
+    tags: ['installation', 'setup', 'npm'],
     updatedAt: new Date(Date.now() - 86400000),
     status: 'published',
   },
@@ -101,6 +118,8 @@ const demoDocuments: Document[] = [
     description: 'Complete overview of the Federated SDK architecture and packages',
     url: `${MKDOCS_BASE_URL}/sdk/overview/`,
     type: 'api-reference',
+    packageName: '@federated/facade',
+    teamName: 'Platform Core',
     tags: ['sdk', 'overview', 'architecture'],
     updatedAt: new Date(),
     status: 'published',
@@ -112,6 +131,7 @@ const demoDocuments: Document[] = [
     description: 'Recommended architecture patterns for the platform',
     url: `${MKDOCS_BASE_URL}/architecture/patterns/`,
     type: 'architecture',
+    teamName: 'Platform Core',
     tags: ['architecture', 'patterns', 'design'],
     updatedAt: new Date(Date.now() - 604800000),
     status: 'published',
@@ -123,30 +143,20 @@ const demoDocuments: Document[] = [
     description: 'AWS infrastructure patterns and best practices',
     url: `${MKDOCS_BASE_URL}/architecture/infrastructure/`,
     type: 'architecture',
+    teamName: 'DevOps',
     tags: ['infrastructure', 'aws', 'cloud', 'patterns'],
     updatedAt: new Date(Date.now() - 604800000),
     status: 'published',
   },
   {
-    id: 'doc-pipeline-runbook',
-    name: 'pipeline-runbook',
-    title: 'Pipeline Troubleshooting Runbook',
-    description: 'Step-by-step guide for troubleshooting CI/CD pipeline issues',
-    url: `${MKDOCS_BASE_URL}/runbooks/pipelines/`,
-    type: 'runbook',
-    projectId: 'game-engine',
-    tags: ['runbook', 'pipelines', 'troubleshooting', 'ci-cd'],
-    updatedAt: new Date(),
-    status: 'published',
-  },
-  {
-    id: 'doc-adr-001',
-    name: 'adr-001-fluent-facade',
-    title: 'ADR-001: Fluent Facade Pattern',
-    description: 'Architecture decision record for adopting the fluent facade pattern',
-    url: '/docs/architecture/adr/001-fluent-facade',
+    id: 'doc-adrs',
+    name: 'architecture-decision-records',
+    title: 'Architecture Decision Records',
+    description: 'ADRs documenting key architectural decisions for the platform',
+    url: `${MKDOCS_BASE_URL}/architecture/adrs/`,
     type: 'adr',
-    tags: ['adr', 'architecture', 'facade', 'decision'],
+    teamName: 'Platform Core',
+    tags: ['adr', 'architecture', 'decisions'],
     updatedAt: new Date(Date.now() - 604800000),
     status: 'published',
   },
@@ -155,9 +165,10 @@ const demoDocuments: Document[] = [
     name: 'telemetry-integration',
     title: 'Telemetry Integration Guide',
     description: 'How to integrate telemetry into your services',
-    url: '/docs/sdk/telemetry',
+    url: `${MKDOCS_BASE_URL}/sdk/telemetry/`,
     type: 'guide',
     packageName: '@federated/telemetry',
+    teamName: 'Observability',
     version: '1.0.0',
     tags: ['telemetry', 'metrics', 'tracing', 'observability'],
     updatedAt: new Date(Date.now() - 86400000),
@@ -168,11 +179,63 @@ const demoDocuments: Document[] = [
     name: 'ui-configuration',
     title: 'UI Configuration Reference',
     description: 'Reference for the centralized UI configuration system',
-    url: '/docs/sdk/ui-config',
+    url: `${MKDOCS_BASE_URL}/sdk/ui-config/`,
     type: 'api-reference',
     packageName: '@federated/ui-config',
+    teamName: 'Frontend Platform',
     version: '1.0.0',
     tags: ['ui', 'components', 'design-system', 'configuration'],
+    updatedAt: new Date(),
+    status: 'published',
+  },
+  {
+    id: 'doc-code-style',
+    name: 'code-style',
+    title: 'Code Style Guide',
+    description: 'Standard code style and conventions for the Ecosystem platform',
+    url: `${MKDOCS_BASE_URL}/standards/code-style/`,
+    type: 'guide',
+    teamName: 'Platform Core',
+    tags: ['code-style', 'standards', 'conventions', 'typescript'],
+    updatedAt: new Date(),
+    status: 'published',
+  },
+  {
+    id: 'doc-facade-api',
+    name: 'facade-api',
+    title: 'Facade API Reference',
+    description: 'Complete API reference for the main SDK entry point',
+    url: `${MKDOCS_BASE_URL}/api/facade/`,
+    type: 'api-reference',
+    packageName: '@federated/facade',
+    teamName: 'Platform Core',
+    tags: ['api', 'facade', 'reference'],
+    updatedAt: new Date(),
+    status: 'published',
+  },
+  {
+    id: 'doc-errors-api',
+    name: 'errors-api',
+    title: 'Error API Reference',
+    description: 'Complete API reference for sdk.errors()',
+    url: `${MKDOCS_BASE_URL}/api/errors/`,
+    type: 'api-reference',
+    packageName: '@federated/error-handling',
+    teamName: 'Platform Core',
+    tags: ['api', 'errors', 'reference'],
+    updatedAt: new Date(),
+    status: 'published',
+  },
+  {
+    id: 'doc-auth-api',
+    name: 'auth-api',
+    title: 'Auth API Reference',
+    description: 'Complete API reference for sdk.auth()',
+    url: `${MKDOCS_BASE_URL}/api/auth/`,
+    type: 'api-reference',
+    packageName: '@federated/auth',
+    teamName: 'Platform Auth',
+    tags: ['api', 'auth', 'reference'],
     updatedAt: new Date(),
     status: 'published',
   },
@@ -192,16 +255,26 @@ const typeConfig: Record<DocumentType, { icon: typeof FileText; label: string; c
 export function Documentation() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<DocumentType | 'all'>('all')
+  const [sdkFilter, setSdkFilter] = useState<string>('all')
+  const [teamFilter, setTeamFilter] = useState<string>('all')
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null)
+
+  // Get unique SDK names and team names for filters
+  const uniqueSdks = [...new Set(demoDocuments.map(d => d.packageName).filter(Boolean))] as string[]
+  const uniqueTeams = [...new Set(demoDocuments.map(d => d.teamName).filter(Boolean))] as string[]
 
   const filteredDocs = demoDocuments.filter(doc => {
     if (typeFilter !== 'all' && doc.type !== typeFilter) return false
+    if (sdkFilter !== 'all' && doc.packageName !== sdkFilter) return false
+    if (teamFilter !== 'all' && doc.teamName !== teamFilter) return false
     if (search) {
       const q = search.toLowerCase()
       return (
         doc.title.toLowerCase().includes(q) ||
         doc.description?.toLowerCase().includes(q) ||
-        doc.tags.some(t => t.toLowerCase().includes(q))
+        doc.tags.some(t => t.toLowerCase().includes(q)) ||
+        doc.packageName?.toLowerCase().includes(q) ||
+        doc.teamName?.toLowerCase().includes(q)
       )
     }
     return true
@@ -263,7 +336,7 @@ export function Documentation() {
             className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Filter className="w-4 h-4 text-gray-400" />
           <select
             value={typeFilter}
@@ -277,6 +350,26 @@ export function Documentation() {
             <option value="architecture">Architecture</option>
             <option value="adr">ADRs</option>
             <option value="runbook">Runbooks</option>
+          </select>
+          <select
+            value={sdkFilter}
+            onChange={(e) => setSdkFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          >
+            <option value="all">All SDKs</option>
+            {uniqueSdks.map(sdk => (
+              <option key={sdk} value={sdk}>{sdk}</option>
+            ))}
+          </select>
+          <select
+            value={teamFilter}
+            onChange={(e) => setTeamFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          >
+            <option value="all">All Teams</option>
+            {uniqueTeams.map(team => (
+              <option key={team} value={team}>{team}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -301,7 +394,7 @@ export function Documentation() {
                   <Icon className={cn("w-5 h-5", config.color)} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className={cn(
                       "px-2 py-0.5 rounded-full text-xs font-medium",
                       config.bg, config.color
@@ -309,8 +402,13 @@ export function Documentation() {
                       {config.label}
                     </span>
                     {doc.packageName && (
-                      <span className="text-xs text-gray-500 font-mono">
+                      <span className="text-xs text-indigo-600 font-mono bg-indigo-50 px-2 py-0.5 rounded">
                         {doc.packageName}
+                      </span>
+                    )}
+                    {doc.teamName && (
+                      <span className="text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
+                        {doc.teamName}
                       </span>
                     )}
                   </div>

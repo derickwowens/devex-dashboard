@@ -15,7 +15,7 @@ This document defines the **Structured Logging Standard** for the Federated DevE
 
 Traditional error logging often lacks the context needed to quickly resolve issues:
 
-| ❌ Traditional Approach | ✅ Our Approach |
+| Traditional Approach | Our Approach |
 |------------------------|-----------------|
 | "Error: Connection failed" | `AUTH-00142: Connection failed: Platform Auth: auth-team@company.com: #auth-incidents` |
 | *Who owns this? Where do I file a ticket?* | *Instant triage. Zero research.* |
@@ -147,11 +147,11 @@ sdk.errors()
 
 ## Benefits
 
-1. **⚡ Faster Triage** — Error ID immediately identifies the issue
-2. **🎯 Accurate Routing** — Tickets go to the right team automatically
-3. **🚫 Reduced Toil** — No more "who owns this?" investigations
-4. **📊 Better Metrics** — Filter and aggregate by SDK, team, or error type
-5. **📋 Audit Trail** — Every error is traceable and accountable
+1. **Faster Triage** — Error ID immediately identifies the issue
+2. **Accurate Routing** — Tickets go to the right team automatically
+3. **Reduced Toil** — No more "who owns this?" investigations
+4. **Better Metrics** — Filter and aggregate by SDK, team, or error type
+5. **Audit Trail** — Every error is traceable and accountable
 
 ## Compliance
 

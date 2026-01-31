@@ -1,0 +1,476 @@
+# =============================================================================
+# Federated DevEx Platform - Standardized GitLab CI/CD Pipeline
+# =============================================================================
+# This pipeline demonstrates:
+# - Parallel matrix execution across environments
+# - GitLab Components for reusable job templates
+# - Standardized security scanning (Snyk, SAST, etc.)
+# - Multi-team templating patterns
+# =============================================================================
+
+include:
+  # GitLab Components - reusable templates shared across teams
+  - component: $CI_SERVER_FQDN/devex/components/security-scanning@1.0.0
+    inputs:
+      stage: security
+  - component: $CI_SERVER_FQDN/devex/components/deploy-template@1.0.0
+    inputs:
+      stage: deploy
+  # Local component definitions (for teams without centralized components)
+  - local: '/.gitlab/components/quality-gates.yml'
+  - local: '/.gitlab/components/notifications.yml'
+
+# =============================================================================
+# VARIABLES - Environment-specific configurations
+# =============================================================================
+variables:
+  # Docker configuration
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  
+  # Snyk configuration
+  SNYK_ORG: "federated-devex"
+  SNYK_SEVERITY_THRESHOLD: "high"
+  
+  # SonarQube configuration
+  SONAR_HOST_URL: "${SONAR_HOST_URL}"
+  SONAR_PROJECT_KEY: "${CI_PROJECT_NAME}"
+  
+  # Deployment targets
+  K8S_NAMESPACE_DEV: "devex-dev"
+  K8S_NAMESPACE_STAGING: "devex-staging"
+  K8S_NAMESPACE_PROD: "devex-prod"
+
+# =============================================================================
+# STAGES - Ordered execution phases
+# =============================================================================
+stages:
+  - prepare
+  - build
+  - test
+  - security
+  - quality
+  - package
+  - deploy
+  - verify
+  - cleanup
+
+# =============================================================================
+# WORKFLOW RULES - Control when pipelines run
+# =============================================================================
+workflow:
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ /^release\/.*/
+    - if: $CI_COMMIT_BRANCH =~ /^hotfix\/.*/
+
+# =============================================================================
+# DEFAULT SETTINGS - Applied to all jobs
+# =============================================================================
+default:
+  image: node:20-alpine
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+  interruptible: true
+  tags:
+    - docker
+    - linux
+
+# =============================================================================
+# HIDDEN JOBS - Reusable job templates (anchors)
+# =============================================================================
+
+# Base template for all security scanning jobs
+.security-scan-base:
+  stage: security
+  allow_failure: false
+  artifacts:
+    reports:
+      dependency_scanning: gl-dependency-scanning-report.json
+      sast: gl-sast-report.json
+    paths:
+      - security-reports/
+    expire_in: 30 days
+
+# Base template for deployment jobs
+.deploy-base:
+  stage: deploy
+  image: 
+    name: bitnami/kubectl:latest
+    entrypoint: [""]
+  before_script:
+    - echo "$KUBE_CONFIG" | base64 -d > /tmp/kubeconfig
+    - export KUBECONFIG=/tmp/kubeconfig
+
+# Base template for notification jobs
+.notify-base:
+  image: curlimages/curl:latest
+  script:
+    - |
+      curl -X POST "$SLACK_WEBHOOK_URL" \
+        -H "Content-Type: application/json" \
+        -d "{\"text\": \"$NOTIFICATION_MESSAGE\"}"
+
+# =============================================================================
+# PREPARE STAGE - Setup and dependency caching
+# =============================================================================
+
+prepare:dependencies:
+  stage: prepare
+  script:
+    - npm ci --cache .npm --prefer-offline
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
+      - node_modules/
+    policy: pull-push
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 hour
+
+# =============================================================================
+# BUILD STAGE - Parallel builds across configurations
+# =============================================================================
+
+build:
+  stage: build
+  needs: ["prepare:dependencies"]
+  parallel:
+    matrix:
+      - NODE_ENV: [development, production]
+        BUILD_TARGET: [web, mobile-web]
+  script:
+    - echo "Building for NODE_ENV=$NODE_ENV, TARGET=$BUILD_TARGET"
+    - npm run build -- --mode $NODE_ENV --target $BUILD_TARGET
+  artifacts:
+    paths:
+      - dist/
+      - build/
+    expire_in: 1 day
+
+# =============================================================================
+# TEST STAGE - Parallel test execution
+# =============================================================================
+
+test:unit:
+  stage: test
+  needs: ["prepare:dependencies"]
+  parallel:
+    matrix:
+      - TEST_SHARD: [1, 2, 3, 4]
+  script:
+    - npm run test:unit -- --shard=$TEST_SHARD/4 --coverage
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  artifacts:
+    reports:
+      junit: junit-report.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+    paths:
+      - coverage/
+    expire_in: 7 days
+
+test:integration:
+  stage: test
+  needs: ["build"]
+  services:
+    - name: postgres:15-alpine
+      alias: db
+    - name: redis:7-alpine
+      alias: cache
+  variables:
+    DATABASE_URL: "postgresql://test:test@db:5432/test"
+    REDIS_URL: "redis://cache:6379"
+  script:
+    - npm run test:integration
+  artifacts:
+    reports:
+      junit: integration-junit.xml
+
+test:e2e:
+  stage: test
+  needs: ["build"]
+  image: mcr.microsoft.com/playwright:v1.40.0
+  parallel:
+    matrix:
+      - BROWSER: [chromium, firefox, webkit]
+  script:
+    - npx playwright test --project=$BROWSER
+  artifacts:
+    paths:
+      - playwright-report/
+      - test-results/
+    when: always
+    expire_in: 7 days
+
+# =============================================================================
+# SECURITY STAGE - Comprehensive security scanning
+# =============================================================================
+
+# Snyk Dependency Scanning - Parallel across package ecosystems
+security:snyk:
+  extends: .security-scan-base
+  image: snyk/snyk:node
+  parallel:
+    matrix:
+      - SCAN_TYPE: [test, code, container, iac]
+  variables:
+    SNYK_TOKEN: $SNYK_TOKEN
+  script:
+    - mkdir -p security-reports
+    - |
+      case "$SCAN_TYPE" in
+        test)
+          echo "Running Snyk dependency vulnerability scan..."
+          snyk test \
+            --org=$SNYK_ORG \
+            --severity-threshold=$SNYK_SEVERITY_THRESHOLD \
+            --json-file-output=security-reports/snyk-deps.json \
+            --sarif-file-output=security-reports/snyk-deps.sarif || true
+          snyk monitor --org=$SNYK_ORG
+          ;;
+        code)
+          echo "Running Snyk code analysis (SAST)..."
+          snyk code test \
+            --org=$SNYK_ORG \
+            --severity-threshold=$SNYK_SEVERITY_THRESHOLD \
+            --json-file-output=security-reports/snyk-code.json \
+            --sarif-file-output=security-reports/snyk-code.sarif || true
+          ;;
+        container)
+          echo "Running Snyk container image scan..."
+          snyk container test \
+            $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA \
+            --org=$SNYK_ORG \
+            --severity-threshold=$SNYK_SEVERITY_THRESHOLD \
+            --json-file-output=security-reports/snyk-container.json || true
+          ;;
+        iac)
+          echo "Running Snyk Infrastructure as Code scan..."
+          snyk iac test \
+            --org=$SNYK_ORG \
+            --severity-threshold=$SNYK_SEVERITY_THRESHOLD \
+            --json-file-output=security-reports/snyk-iac.json \
+            --sarif-file-output=security-reports/snyk-iac.sarif || true
+          ;;
+      esac
+    - |
+      # Convert Snyk output to GitLab format
+      if [ -f "security-reports/snyk-deps.json" ]; then
+        node scripts/convert-snyk-to-gitlab.js security-reports/snyk-deps.json > gl-dependency-scanning-report.json
+      fi
+
+# GitLab SAST - Built-in static analysis
+security:sast:
+  extends: .security-scan-base
+  image: 
+    name: "registry.gitlab.com/gitlab-org/security-products/sast:latest"
+  script:
+    - /analyzer run
+  artifacts:
+    reports:
+      sast: gl-sast-report.json
+
+# Secret Detection
+security:secrets:
+  extends: .security-scan-base
+  image: 
+    name: "registry.gitlab.com/gitlab-org/security-products/secrets:latest"
+  script:
+    - /analyzer run
+  artifacts:
+    reports:
+      secret_detection: gl-secret-detection-report.json
+
+# License Compliance
+security:licenses:
+  extends: .security-scan-base
+  image: 
+    name: "registry.gitlab.com/gitlab-org/security-products/license-finder:latest"
+  script:
+    - /run.sh analyze .
+  artifacts:
+    reports:
+      license_scanning: gl-license-scanning-report.json
+
+# =============================================================================
+# QUALITY STAGE - Code quality gates
+# =============================================================================
+
+quality:sonar:
+  stage: quality
+  needs: ["test:unit"]
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  script:
+    - |
+      sonar-scanner \
+        -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+        -Dsonar.sources=src \
+        -Dsonar.tests=tests \
+        -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+        -Dsonar.testExecutionReportPaths=test-report.xml \
+        -Dsonar.qualitygate.wait=true
+
+quality:lint:
+  stage: quality
+  needs: ["prepare:dependencies"]
+  parallel:
+    matrix:
+      - LINT_TYPE: [eslint, prettier, typescript]
+  script:
+    - |
+      case "$LINT_TYPE" in
+        eslint)
+          npm run lint:check -- --format gitlab --output-file gl-codequality.json
+          ;;
+        prettier)
+          npm run format:check
+          ;;
+        typescript)
+          npm run typecheck
+          ;;
+      esac
+  artifacts:
+    reports:
+      codequality: gl-codequality.json
+    when: always
+
+# =============================================================================
+# PACKAGE STAGE - Container builds with multi-arch support
+# =============================================================================
+
+package:docker:
+  stage: package
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  needs: ["build", "test:unit", "security:snyk"]
+  parallel:
+    matrix:
+      - PLATFORM: [linux/amd64, linux/arm64]
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - |
+      docker buildx create --use
+      docker buildx build \
+        --platform $PLATFORM \
+        --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-${PLATFORM//\//-} \
+        --push \
+        --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+        --build-arg VCS_REF=$CI_COMMIT_SHA \
+        --build-arg VERSION=$CI_COMMIT_TAG \
+        .
+
+package:manifest:
+  stage: package
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  needs: ["package:docker"]
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - |
+      docker manifest create $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA \
+        $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-linux-amd64 \
+        $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-linux-arm64
+      docker manifest push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        docker manifest create $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG \
+          $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-linux-amd64 \
+          $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA-linux-arm64
+        docker manifest push $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+      fi
+
+# =============================================================================
+# DEPLOY STAGE - Parallel deployments across environments
+# =============================================================================
+
+deploy:
+  extends: .deploy-base
+  parallel:
+    matrix:
+      - ENVIRONMENT: [dev, staging]
+        K8S_NAMESPACE: [devex-dev, devex-staging]
+      - ENVIRONMENT: [prod]
+        K8S_NAMESPACE: [devex-prod]
+        when: manual
+  environment:
+    name: $ENVIRONMENT
+    url: https://$ENVIRONMENT.devex.example.com
+    on_stop: "deploy:cleanup:$ENVIRONMENT"
+  script:
+    - |
+      echo "Deploying to $ENVIRONMENT in namespace $K8S_NAMESPACE"
+      kubectl set image deployment/$CI_PROJECT_NAME \
+        $CI_PROJECT_NAME=$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA \
+        -n $K8S_NAMESPACE
+      kubectl rollout status deployment/$CI_PROJECT_NAME -n $K8S_NAMESPACE --timeout=5m
+  rules:
+    - if: $ENVIRONMENT == "prod"
+      when: manual
+    - if: $ENVIRONMENT != "prod"
+      when: on_success
+
+# =============================================================================
+# VERIFY STAGE - Post-deployment verification
+# =============================================================================
+
+verify:smoke:
+  stage: verify
+  needs: ["deploy"]
+  parallel:
+    matrix:
+      - ENVIRONMENT: [dev, staging, prod]
+  script:
+    - |
+      echo "Running smoke tests for $ENVIRONMENT"
+      npm run test:smoke -- --env=$ENVIRONMENT
+  rules:
+    - if: $ENVIRONMENT == "prod"
+      when: manual
+    - when: on_success
+
+verify:performance:
+  stage: verify
+  needs: ["deploy"]
+  image: grafana/k6:latest
+  parallel:
+    matrix:
+      - TEST_SCENARIO: [load, stress, soak]
+  script:
+    - |
+      k6 run \
+        --out json=k6-results-$TEST_SCENARIO.json \
+        --tag scenario=$TEST_SCENARIO \
+        tests/performance/$TEST_SCENARIO.js
+  artifacts:
+    paths:
+      - k6-results-*.json
+    expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+
+# =============================================================================
+# CLEANUP STAGE
+# =============================================================================
+
+cleanup:artifacts:
+  stage: cleanup
+  script:
+    - echo "Cleaning up old artifacts and temporary resources"
+  when: always

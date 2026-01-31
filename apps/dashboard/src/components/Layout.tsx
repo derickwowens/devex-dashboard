@@ -11,7 +11,8 @@ import {
   Menu,
   X,
   Rocket,
-  Globe2
+  Globe2,
+  Database
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '../lib/utils'
@@ -20,6 +21,8 @@ const navigation = [
   { name: 'Ecosystem Home', href: '/', icon: LayoutDashboard },
   { name: 'My Projects', href: '/projects', icon: FolderGit2 },
   { name: 'CI/CD Pipelines', href: '/pipelines', icon: GitBranch },
+  { name: 'CI/CD Philosophy', href: '/cicd-philosophy', icon: Boxes },
+  { name: 'Architecture', href: '/architecture', icon: Database },
   { name: 'Error Triage', href: '/errors', icon: AlertCircle },
   { name: 'Knowledge Base', href: '/documentation', icon: FileText },
   { name: 'Team Directory', href: '/contacts', icon: Users },

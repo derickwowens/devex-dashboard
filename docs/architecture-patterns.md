@@ -6,7 +6,7 @@ This document maintains 3 recommended code architecture patterns for the Federat
 
 ## Pattern 1: Fluent Facade with Plugin Architecture
 
-**Status**: ✅ Recommended (Primary Pattern)
+**Status**: Recommended (Primary Pattern)
 
 ### Description
 A central facade class that exposes a fluent API, with functionality provided by pluggable child SDKs. Each plugin registers itself with the core, and the facade delegates to the appropriate plugin.
@@ -58,17 +58,17 @@ class FederatedSDK {
 - When AI agents need to discover and use APIs
 
 ### Trade-offs
-- ✅ Highly discoverable API
-- ✅ Easy to extend with new plugins
-- ✅ Versioning at facade level protects consumers
-- ⚠️ Slight indirection overhead
-- ⚠️ Requires discipline to keep facade updated
+- Highly discoverable API
+- Easy to extend with new plugins
+- Versioning at facade level protects consumers
+- Slight indirection overhead
+- Requires discipline to keep facade updated
 
 ---
 
 ## Pattern 2: Command Query Responsibility Segregation (CQRS) for Services
 
-**Status**: ✅ Recommended (For Complex Domains)
+**Status**: Recommended (For Complex Domains)
 
 ### Description
 Separate read (query) and write (command) operations into distinct models. Commands mutate state and return minimal data; queries read state and return rich projections.
@@ -126,17 +126,17 @@ class PipelineQueryHandler {
 - Event-sourced systems
 
 ### Trade-offs
-- ✅ Optimized read and write paths
-- ✅ Clear separation of concerns
-- ✅ Scales independently
-- ⚠️ Increased complexity
-- ⚠️ Eventual consistency considerations
+- Optimized read and write paths
+- Clear separation of concerns
+- Scales independently
+- Increased complexity
+- Eventual consistency considerations
 
 ---
 
 ## Pattern 3: Middleware Pipeline for Cross-Cutting Concerns
 
-**Status**: ✅ Recommended (For Request Processing)
+**Status**: Recommended (For Request Processing)
 
 ### Description
 A composable pipeline where each middleware can inspect, modify, or short-circuit requests. Used for error handling, logging, authentication, and telemetry.
@@ -188,11 +188,11 @@ const pipeline = new Pipeline<RequestContext>()
 - Any sequential processing with cross-cutting concerns
 
 ### Trade-offs
-- ✅ Highly composable
-- ✅ Easy to add/remove concerns
-- ✅ Testable in isolation
-- ⚠️ Order matters — can be error-prone
-- ⚠️ Debugging can be tricky with deep chains
+- Highly composable
+- Easy to add/remove concerns
+- Testable in isolation
+- Order matters — can be error-prone
+- Debugging can be tricky with deep chains
 
 ---
 
@@ -200,9 +200,9 @@ const pipeline = new Pipeline<RequestContext>()
 
 | Pattern | Complexity | Scalability | AI-Friendliness | Use Case |
 |---------|------------|-------------|-----------------|----------|
-| Fluent Facade | Low | Medium | ⭐⭐⭐⭐⭐ | SDK/API surface |
-| CQRS | High | High | ⭐⭐⭐ | Complex domains |
-| Middleware Pipeline | Medium | Medium | ⭐⭐⭐⭐ | Request processing |
+| Fluent Facade | Low | Medium | Excellent | SDK/API surface |
+| CQRS | High | High | Good | Complex domains |
+| Middleware Pipeline | Medium | Medium | Very Good | Request processing |
 
 ---
 
