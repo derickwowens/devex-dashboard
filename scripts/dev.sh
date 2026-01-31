@@ -1,7 +1,13 @@
 #!/bin/bash
 
 # DevEx Platform Local Development Script
-# Handles starting/restarting the dashboard and chat-api servers
+# Handles building, starting, and restarting all services
+#
+# Features:
+# - Builds all necessary services before starting
+# - Syncs documentation for chatbot knowledge base
+# - Manages ports (kills existing processes before starting)
+# - Loads environment variables from .env files
 
 set -e
 
@@ -10,11 +16,13 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Ports
-DASHBOARD_PORT=3000
+DASHBOARD_PORT=3001
 CHAT_API_PORT=3002
+DOCS_PORT=8000
 
 # Project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -51,10 +59,18 @@ kill_port() {
 }
 
 check_env() {
+    log_info "Loading environment variables..."
+    
     # Load .env from dashboard if it exists
     if [ -f "$PROJECT_ROOT/apps/dashboard/.env" ]; then
-        export $(grep -v '^#' "$PROJECT_ROOT/apps/dashboard/.env" | xargs)
+        export $(grep -v '^#' "$PROJECT_ROOT/apps/dashboard/.env" | xargs 2>/dev/null) 2>/dev/null || true
         log_info "Loaded environment from dashboard/.env"
+    fi
+    
+    # Load .env from chat-api if it exists
+    if [ -f "$PROJECT_ROOT/apps/chat-api/.env" ]; then
+        export $(grep -v '^#' "$PROJECT_ROOT/apps/chat-api/.env" | xargs 2>/dev/null) 2>/dev/null || true
+        log_info "Loaded environment from chat-api/.env"
     fi
 
     # Check for required env vars
@@ -67,33 +83,103 @@ check_env() {
     if [ -z "$ANTHROPIC_API_KEY" ]; then
         log_warn "ANTHROPIC_API_KEY not set - Chat functionality will not work"
         log_warn "Set it with: export ANTHROPIC_API_KEY=your_key"
+    else
+        log_success "ANTHROPIC_API_KEY is set"
     fi
+}
+
+sync_docs() {
+    log_info "Syncing documentation for chatbot knowledge base..."
+    
+    # Sync architecture docs for dashboard
+    if [ -f "$PROJECT_ROOT/apps/dashboard/scripts/sync-architecture-docs.cjs" ]; then
+        cd "$PROJECT_ROOT/apps/dashboard"
+        node scripts/sync-architecture-docs.cjs 2>/dev/null || log_warn "Failed to sync architecture docs"
+        cd "$PROJECT_ROOT"
+    fi
+    
+    # Sync knowledge base for chat-api
+    if [ -f "$PROJECT_ROOT/apps/chat-api/scripts/sync-knowledge.cjs" ]; then
+        cd "$PROJECT_ROOT/apps/chat-api"
+        node scripts/sync-knowledge.cjs 2>/dev/null || log_warn "Failed to sync chat knowledge"
+        cd "$PROJECT_ROOT"
+    fi
+    
+    log_success "Documentation sync complete"
+}
+
+install_deps() {
+    log_info "Checking dependencies..."
+    
+    # Dashboard dependencies
+    if [ ! -d "$PROJECT_ROOT/apps/dashboard/node_modules" ]; then
+        log_info "Installing dashboard dependencies..."
+        cd "$PROJECT_ROOT/apps/dashboard"
+        npm install
+        cd "$PROJECT_ROOT"
+    fi
+    
+    # Chat API dependencies
+    if [ ! -d "$PROJECT_ROOT/apps/chat-api/node_modules" ]; then
+        log_info "Installing chat-api dependencies..."
+        cd "$PROJECT_ROOT/apps/chat-api"
+        npm install
+        cd "$PROJECT_ROOT"
+    fi
+    
+    log_success "Dependencies ready"
+}
+
+build_services() {
+    log_info "Building services..."
+    
+    # Sync docs first (generates data files)
+    sync_docs
+    
+    log_success "Build complete"
 }
 
 start_dashboard() {
     log_info "Starting dashboard on port $DASHBOARD_PORT..."
+    kill_port $DASHBOARD_PORT
+    kill_port 3000  # Also kill default Vite port
     cd "$PROJECT_ROOT/apps/dashboard"
-    npm run dev &
+    PORT=$DASHBOARD_PORT npm run dev &
     log_success "Dashboard starting at http://localhost:$DASHBOARD_PORT"
 }
 
 start_chat_api() {
     log_info "Starting chat-api on port $CHAT_API_PORT..."
+    kill_port $CHAT_API_PORT
     cd "$PROJECT_ROOT/apps/chat-api"
-    npm run dev &
+    PORT=$CHAT_API_PORT npx tsx src/index.ts &
     log_success "Chat API starting at http://localhost:$CHAT_API_PORT"
+}
+
+start_docs() {
+    log_info "Starting docs server on port $DOCS_PORT..."
+    kill_port $DOCS_PORT
+    cd "$PROJECT_ROOT"
+    if [ -d ".venv" ]; then
+        source .venv/bin/activate 2>/dev/null || true
+    fi
+    mkdocs serve -a 0.0.0.0:$DOCS_PORT &
+    log_success "Docs starting at http://localhost:$DOCS_PORT"
 }
 
 stop_all() {
     log_info "Stopping all dev servers..."
     kill_port $DASHBOARD_PORT
-    kill_port 3001  # Vite fallback port
+    kill_port 3000  # Vite default port
     kill_port $CHAT_API_PORT
+    kill_port $DOCS_PORT
     log_success "All servers stopped"
 }
 
 start_all() {
     check_env
+    install_deps
+    build_services
     log_info "Starting all dev servers..."
     start_chat_api
     sleep 2
@@ -128,6 +214,12 @@ show_status() {
     else
         log_warn "Chat API is not running"
     fi
+    
+    if lsof -ti:$DOCS_PORT >/dev/null 2>&1; then
+        log_success "Docs server is running on port $DOCS_PORT"
+    else
+        log_warn "Docs server is not running"
+    fi
     echo ""
 }
 
@@ -138,17 +230,25 @@ show_help() {
     echo "Usage: $0 [command]"
     echo ""
     echo "Commands:"
-    echo "  start     Start all dev servers"
+    echo "  start     Start all dev servers (builds first)"
     echo "  stop      Stop all dev servers"
-    echo "  restart   Restart all dev servers"
+    echo "  restart   Restart all dev servers (builds first)"
     echo "  status    Show server status"
+    echo "  build     Build/sync all documentation and knowledge base"
+    echo "  sync      Sync documentation for chatbot knowledge base"
     echo "  dashboard Start only the dashboard"
     echo "  chat      Start only the chat-api"
+    echo "  docs      Start only the docs server"
     echo "  help      Show this help message"
     echo ""
     echo "Environment variables:"
     echo "  GITHUB_TOKEN       GitHub personal access token"
     echo "  ANTHROPIC_API_KEY  Anthropic API key for chat"
+    echo ""
+    echo "Ports:"
+    echo "  Dashboard: $DASHBOARD_PORT"
+    echo "  Chat API:  $CHAT_API_PORT"
+    echo "  Docs:      $DOCS_PORT"
     echo ""
 }
 
@@ -183,6 +283,19 @@ case "${1:-start}" in
         kill_port $CHAT_API_PORT
         start_chat_api
         wait
+        ;;
+    docs)
+        kill_port $DOCS_PORT
+        start_docs
+        wait
+        ;;
+    build)
+        install_deps
+        build_services
+        log_success "Build complete!"
+        ;;
+    sync)
+        sync_docs
         ;;
     help|--help|-h)
         show_help

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
 import { GitHubTools } from './github-tools.js';
+import { getKnowledgeBaseContent, lastUpdated } from './knowledge-base.js';
 
 const app = express();
 app.use(cors());
@@ -22,23 +23,42 @@ if (!GITHUB_TOKEN) {
 const anthropic = ANTHROPIC_API_KEY ? new Anthropic({ apiKey: ANTHROPIC_API_KEY }) : null;
 const githubTools = GITHUB_TOKEN ? new GitHubTools(GITHUB_TOKEN) : null;
 
-const SYSTEM_PROMPT = `You are a helpful DevEx assistant that helps engineers query and understand their GitHub data. You have access to tools that can:
+// Build dynamic system prompt from knowledge base
+function buildSystemPrompt(): string {
+  const knowledgeContent = getKnowledgeBaseContent();
+  
+  return `You are a helpful DevEx assistant for the Federated Developer Experience Platform. You help engineers with:
 
+1. **GitHub Data** - You have tools to query repositories, commits, pipelines, pull requests, and code search.
+
+2. **Platform Knowledge** - You know about our CI/CD philosophy, architecture patterns, and documentation.
+
+## GitHub Tools Available
 - List and search repositories
 - View commits and commit history
-- Check CI/CD pipeline status (GitHub Actions workflow runs)
+- Check CI/CD pipeline status (GitHub Actions)
 - List pull requests and issues
 - Search code across repositories
 - Get repository statistics and branch information
 
-When users ask questions about their repositories, pipelines, commits, or other GitHub data, use the appropriate tools to fetch the information and provide helpful, concise summaries.
+## Guidelines
+- Be concise and direct
+- Format data in tables or lists when appropriate
+- Highlight important information like failed pipelines or potential issues
+- Provide actionable insights
+- For platform questions (CI/CD philosophy, architecture, patterns), use your built-in knowledge below
+- For GitHub data questions, use the available tools
 
-Guidelines:
-- Be concise and direct in your responses
-- Format data in easy-to-read tables or lists when appropriate
-- Highlight important information like failed pipelines, recent activity, or potential issues
-- If you're unsure which repository they mean, ask for clarification or list available options
-- Provide actionable insights when possible (e.g., "3 pipelines failed in the last hour - you may want to check these")`;
+---
+# Platform Knowledge Base
+(Last updated: ${lastUpdated})
+
+${knowledgeContent}
+`;
+}
+
+const SYSTEM_PROMPT = buildSystemPrompt();
+
 
 interface Message {
   role: 'user' | 'assistant';
@@ -125,6 +145,10 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     anthropic: !!anthropic,
     github: !!githubTools,
+    knowledgeBase: {
+      lastUpdated,
+      promptLength: SYSTEM_PROMPT.length,
+    },
   });
 });
 

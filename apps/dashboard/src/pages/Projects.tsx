@@ -293,6 +293,35 @@ const SERVICE_INTEGRATIONS: Record<string, { name: string; icon: string; categor
   'DATADOG_API_KEY': { name: 'Datadog', icon: 'Monitor', category: 'Monitoring' },
 }
 
+// Package-based integration detection (from package.json dependencies)
+const PACKAGE_INTEGRATIONS: Record<string, { name: string; icon: string; category: string }> = {
+  '@anthropic-ai/sdk': { name: 'Anthropic Claude', icon: 'AI', category: 'AI/ML' },
+  'openai': { name: 'OpenAI', icon: 'AI', category: 'AI/ML' },
+  '@octokit/rest': { name: 'GitHub API', icon: 'Git', category: 'Development' },
+  '@octokit/core': { name: 'GitHub API', icon: 'Git', category: 'Development' },
+  'stripe': { name: 'Stripe', icon: 'Pay', category: 'Payments' },
+  '@stripe/stripe-js': { name: 'Stripe', icon: 'Pay', category: 'Payments' },
+  '@sendgrid/mail': { name: 'SendGrid', icon: 'Mail', category: 'Email' },
+  'twilio': { name: 'Twilio', icon: 'SMS', category: 'Communications' },
+  '@aws-sdk/client-s3': { name: 'AWS S3', icon: 'Cloud', category: 'Cloud' },
+  '@aws-sdk/client-dynamodb': { name: 'AWS DynamoDB', icon: 'Cloud', category: 'Cloud' },
+  'aws-sdk': { name: 'AWS', icon: 'Cloud', category: 'Cloud' },
+  '@azure/identity': { name: 'Azure', icon: 'Cloud', category: 'Cloud' },
+  '@google-cloud/storage': { name: 'Google Cloud', icon: 'Cloud', category: 'Cloud' },
+  'firebase': { name: 'Firebase', icon: 'DB', category: 'Backend' },
+  'firebase-admin': { name: 'Firebase Admin', icon: 'DB', category: 'Backend' },
+  '@supabase/supabase-js': { name: 'Supabase', icon: 'DB', category: 'Backend' },
+  'prisma': { name: 'Prisma', icon: 'DB', category: 'Database' },
+  '@prisma/client': { name: 'Prisma', icon: 'DB', category: 'Database' },
+  'mongoose': { name: 'MongoDB', icon: 'DB', category: 'Database' },
+  'pg': { name: 'PostgreSQL', icon: 'DB', category: 'Database' },
+  'redis': { name: 'Redis', icon: 'Cache', category: 'Cache' },
+  'ioredis': { name: 'Redis', icon: 'Cache', category: 'Cache' },
+  '@sentry/node': { name: 'Sentry', icon: 'Monitor', category: 'Monitoring' },
+  '@sentry/react': { name: 'Sentry', icon: 'Monitor', category: 'Monitoring' },
+  'datadog-metrics': { name: 'Datadog', icon: 'Monitor', category: 'Monitoring' },
+}
+
 export function Projects() {
   const [search, setSearch] = useState('')
   const [languageFilter, setLanguageFilter] = useState<string>('all')
@@ -310,10 +339,11 @@ export function Projects() {
     }
   }, [repos, packageJsons, pkgLoading])
   
-  // Derive service integrations from env vars
+  // Derive service integrations from env vars AND package.json dependencies
   const projectIntegrations = useMemo(() => {
     const integrations = new Map<string, Array<{ name: string; category: string }>>()
     
+    // Check env vars for integrations
     envVars.forEach((vars, repoName) => {
       const services: Array<{ name: string; category: string }> = []
       vars.forEach(varName => {
@@ -327,8 +357,30 @@ export function Projects() {
       }
     })
     
+    // Also check package.json dependencies for integrations
+    packageJsons.forEach((pkg, repoName) => {
+      if (!pkg) return
+      const services = integrations.get(repoName) || []
+      
+      const allDeps = {
+        ...(pkg.dependencies || {}),
+        ...(pkg.devDependencies || {}),
+      }
+      
+      Object.keys(allDeps).forEach(depName => {
+        const service = PACKAGE_INTEGRATIONS[depName]
+        if (service && !services.some(s => s.name === service.name)) {
+          services.push({ name: service.name, category: service.category })
+        }
+      })
+      
+      if (services.length > 0) {
+        integrations.set(repoName, services)
+      }
+    })
+    
     return integrations
-  }, [envVars])
+  }, [envVars, packageJsons])
   
   const uniqueLanguages = useMemo(() => {
     const langs = [...new Set(projects.map(p => p.language).filter(Boolean))]
@@ -583,7 +635,7 @@ export function Projects() {
                         <Cloud className="w-5 h-5 text-purple-600" />
                         <h4 className="font-semibold text-gray-900">Service Integrations</h4>
                         <span className="text-xs text-gray-500 ml-auto">
-                          Detected from .env.example
+                          Detected from dependencies & env vars
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-2">

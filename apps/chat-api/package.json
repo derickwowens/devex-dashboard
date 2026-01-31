@@ -5,9 +5,10 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "npm run sync:knowledge && tsc",
     "start": "node dist/index.js",
-    "dev": "tsx watch src/index.ts"
+    "dev": "tsx watch src/index.ts",
+    "sync:knowledge": "node scripts/sync-knowledge.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.0",
