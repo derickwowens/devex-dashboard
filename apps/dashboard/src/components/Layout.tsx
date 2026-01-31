@@ -12,19 +12,21 @@ import {
   X,
   Rocket,
   Globe2,
-  Database
+  Database,
+  ClipboardList
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '../lib/utils'
 
 const navigation = [
   { name: 'Ecosystem Home', href: '/', icon: LayoutDashboard },
+  { name: 'Knowledge Base', href: '/documentation', icon: FileText },
+  { name: 'My Work Items', href: '/work-items', icon: ClipboardList },
   { name: 'My Projects', href: '/projects', icon: FolderGit2 },
   { name: 'CI/CD Pipelines', href: '/pipelines', icon: GitBranch },
   { name: 'CI/CD Philosophy', href: '/cicd-philosophy', icon: Boxes },
   { name: 'Architecture', href: '/architecture', icon: Database },
   { name: 'Error Triage', href: '/errors', icon: AlertCircle },
-  { name: 'Knowledge Base', href: '/documentation', icon: FileText },
   { name: 'Team Directory', href: '/contacts', icon: Users },
   { name: 'AI Code Review', href: '/code-review', icon: Code2 },
   { name: 'API Explorer', href: '/sdk', icon: Boxes },

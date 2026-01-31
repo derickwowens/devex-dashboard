@@ -10,6 +10,7 @@ import { Documentation } from './pages/Documentation'
 import { Projects } from './pages/Projects'
 import { CICDPhilosophy } from './pages/CICDPhilosophy'
 import { Architecture } from './pages/Architecture'
+import { WorkItems } from './pages/WorkItems'
 import { Chatbot } from './components/Chatbot'
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
           <Route path="sdk" element={<SDKPlayground />} />
           <Route path="documentation" element={<Documentation />} />
           <Route path="projects" element={<Projects />} />
+          <Route path="work-items" element={<WorkItems />} />
         </Route>
       </Routes>
       <Chatbot />
